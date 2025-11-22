@@ -1,0 +1,55 @@
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:include filename="$(find rm_description)/urdf/common/swerve_drive.urdf.xacro"/>
+    <!-- https://upload.wikimedia.org/wikipedia/commons/5/52/Wheelbase_and_Track.png -->
+    <xacro:property name="wheel_track" value="0.362"/>
+    <xacro:property name="wheel_base" value="0.362"/>
+    <xacro:property name="wheel_offset_z" value="0.013"/>
+    <xacro:macro name="chassis" params="roller_type">
+
+        <link name="base_link">
+            <inertial>
+                <mass value="9.16"/>
+                <origin xyz="0.00322  0.014441  0.043408"/>
+                <inertia ixx="2.298e-1" ixy="7.142e-4" ixz="1.441e-2" iyy="2.387e-1"
+                         iyz="1.056e-2" izz="3.928e-1"/>
+            </inertial>
+            <visual>
+                <origin xyz="0 0 0" rpy="0 0 0"/>
+                <geometry>
+                    <mesh filename="package://rm_description/meshes/sentry/base.stl" scale="1 1 1"/>
+                </geometry>
+            </visual>
+            <collision>
+                <origin xyz="0 0 0.04" rpy="0 0 0"/>
+                <geometry>
+                    <box size="0.615 0.62 0.3"/>
+                </geometry>
+            </collision>
+        </link>
+
+        <xacro:swerve_drive prefix="left_front" connected_to="base_link"
+                            x_offset="${wheel_track/2}" y_offset="${wheel_base/2}"
+                            z_offset="${wheel_offset_z}"/>
+        <xacro:swerve_drive prefix="right_front" connected_to="base_link"
+                            x_offset="${wheel_track/2}" y_offset="${-wheel_base/2}"
+                            z_offset="${wheel_offset_z}"/>
+        <xacro:swerve_drive prefix="left_back" connected_to="base_link"
+                            x_offset="${-wheel_track/2}" y_offset="${wheel_base/2}"
+                            z_offset="${wheel_offset_z}"/>
+        <xacro:swerve_drive prefix="right_back" connected_to="base_link"
+                            x_offset="${-wheel_track/2}" y_offset="${-wheel_base/2}"
+                            z_offset="${wheel_offset_z}"/>
+
+        <xacro:swerve_transmission prefix="left_front" wheel_reduction="13" pivot_offset="2.340"/>   <!-- 2.3566-->
+        <xacro:swerve_transmission prefix="right_front" wheel_reduction="13" pivot_offset="-0.285"/>   <!-- -0.283-->
+        <xacro:swerve_transmission prefix="left_back" wheel_reduction="13" pivot_offset="-0.259"/>   <!-- 6.0335-->
+        <xacro:swerve_transmission prefix="right_back" wheel_reduction="13" pivot_offset="2.330"/>   <!-- -3.923-->
+<!--        <xacro:swerve_transmission prefix="left_front" wheel_reduction="13" pivot_offset="0"/>   &lt;!&ndash; 2.3566&ndash;&gt;-->
+<!--        <xacro:swerve_transmission prefix="right_front" wheel_reduction="13" pivot_offset="0"/>   &lt;!&ndash; -0.283&ndash;&gt;-->
+<!--        <xacro:swerve_transmission prefix="left_back" wheel_reduction="13" pivot_offset="0"/>   &lt;!&ndash; 6.0335&ndash;&gt;-->
+<!--        <xacro:swerve_transmission prefix="right_back" wheel_reduction="13" pivot_offset="0"/>   &lt;!&ndash; -3.923&ndash;&gt;-->
+
+    </xacro:macro>
+
+</robot>
