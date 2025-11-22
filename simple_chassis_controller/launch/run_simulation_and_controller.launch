@@ -1,5 +1,5 @@
 <launch>
-  <include file="$(find rm_description)/launch/hero.launch">
+  <include file="$(find rm_description)/launch/sentry.launch">
     <arg name="load_chassis" value="true"/>
     <arg name="roller_type" value="realistic"/>
     <arg name="paused" value="true"/>
@@ -11,6 +11,8 @@
         output="screen" args="
         controller/simple_chassis_controller
         controller/joint_state_controller
+        
+        
   "/>
 
 </launch>

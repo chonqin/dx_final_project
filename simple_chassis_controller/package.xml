@@ -18,7 +18,7 @@
   <depend>hardware_interface</depend>
   <depend>forward_command_controller</depend>
   <depend>pluginlib</depend>
-  <depend>rm_description</depend>
+  <depend>control_toolbox</depend>
 
   <export>
     <controller_interface plugin="${prefix}/simple_chassis_controller_plugins.xml"/>

@@ -18,6 +18,7 @@ find_package(catkin REQUIRED
     hardware_interface
     forward_command_controller
     pluginlib
+    control_toolbox
     )
 
 ###################################
@@ -41,6 +42,7 @@ catkin_package(
     hardware_interface
     forward_command_controller
     pluginlib
+    control_toolbox
     DEPENDS
 )
 
