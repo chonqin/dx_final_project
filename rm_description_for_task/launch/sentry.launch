@@ -1,6 +1,6 @@
 <launch>
     <arg name="load_chassis" default="true"/>
-    <arg name="paused" default="false"/>
+    <arg name="paused" default="true"/>
     <arg name="roller_type" default="realistic" doc="simple or realistic"/>
 
     <param name="robot_description" command="$(find xacro)/xacro $(find rm_description)/urdf/sentry/sentry.urdf.xacro

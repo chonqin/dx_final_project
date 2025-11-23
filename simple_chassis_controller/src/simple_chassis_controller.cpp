@@ -80,6 +80,7 @@ namespace simple_chassis_controller {
   // right strafe
   double theta_right[4] = {-M_PI/2, -M_PI/2, -M_PI/2, -M_PI/2};
   double v_right[4] = {speed, speed, speed, speed};
+
   /*将各个模式的参数存储到二维数组中，便于后续调用。
   二维数组前面的参数代表模式，后面的参数代表每个车轮，所以设置为i，：
   0->左前轮，1->右前轮，2->左后轮，3->右后轮
@@ -113,7 +114,8 @@ wheel_cmd_ 数组（车轮速度）：
     pivot_cmd_[3][i] = theta_right[i];
     wheel_cmd_[3][i] = v_right[i];
   }
-
+  state_ = 0;
+  last_change_ = ros::Time::now();
   return true;
 }
 /*
