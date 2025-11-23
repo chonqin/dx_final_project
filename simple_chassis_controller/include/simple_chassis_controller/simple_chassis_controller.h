@@ -17,6 +17,8 @@ class SimpleChassisController : public controller_interface::Controller<hardware
   SimpleChassisController() = default;//默认构造函数,用于创建SimpleChassisController对象
   ~SimpleChassisController() override = default;//默认析构函数,用于销毁SimpleChassisController对象
   //初始化函数,用于初始化控制器,重写controller_interface::Controller类的init函数
+  //前面的参数是指向硬件接口的指针,后面的两个参数是ROS节点句柄。
+  //前一个是根节点句柄,后一个是控制器私有节点句柄，这是init函数的参数列表规定。
   bool init(hardware_interface::EffortJointInterface *effort_joint_interface,
             ros::NodeHandle &root_nh, ros::NodeHandle &controller_nh) override;//override关键字表示该函数重写了基类中的虚函数
 
@@ -27,12 +29,12 @@ class SimpleChassisController : public controller_interface::Controller<hardware
       back_left_wheel_joint_, back_right_wheel_joint_;
  private:
   //运动状态变量,用于记录当前的运动状态
-  int state_{};
+  int state_{};//运动状态变量,用于记录当前的运动状态
   ros::Time last_change_;
-  double wheel_track_;
-  double wheel_base_;
-  double pivot_cmd_[4][4];
-  double wheel_cmd_[4][4];
+  double wheel_track_;//车轮间距,
+  double wheel_base_;//轴距
+  double pivot_cmd_[4][4];//关节角度转向数组
+  double wheel_cmd_[4][4];//车轮速度数组
   //初始化PID控制器对象
   control_toolbox::Pid pid_lf_, pid_rf_, pid_lb_, pid_rb_;
   control_toolbox::Pid pid_lf_wheel_, pid_rf_wheel_, pid_lb_wheel_, pid_rb_wheel_;
