@@ -1,6 +1,6 @@
 # 底盘参数
 wheel_track: 0.362
-wheel_base: 0.425
+wheel_base: 0.362
 max_pivot_speed: 5.0
 max_wheel_speed: 10.0
 
