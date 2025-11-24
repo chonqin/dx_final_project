@@ -1,21 +1,24 @@
 #ifndef SENTRY_CHASSIS_CONTROLLER_SENTRY_CHASSIS_CONTROLLER_H
 #define SENTRY_CHASSIS_CONTROLLER_SENTRY_CHASSIS_CONTROLLER_H
-
+/*ros官方头文件依赖*/
 #include <control_toolbox/pid.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <controller_interface/controller.h>
 #include <ros/ros.h>
 #include <string>
+/*自定义头文件依赖*/
+#include "sentry_chassis_controller/kinematics.h"
 namespace sentry_chassis_controller {
     // 定义SentryChassisController类,继承自controller_interface::Controller模板类
     class SentryChassisController : public controller_interface::Controller<hardware_interface::EffortJointInterface> {
         public:
+            //
             SentryChassisController() = default;
             ~SentryChassisController() override = default;
-
+            // 初始化函数，重写基类的init函数
             bool init(hardware_interface::EffortJointInterface* sentry_chassis_controller, 
                 ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh) override;
-
+            // 更新函数，重写基类的update函数        
             void update(const ros::Time& time, const ros::Duration& period) override;
 
             hardware_interface::JointHandle front_left_pivot_joint_, front_right_pivot_joint_, back_left_pivot_joint_, back_right_pivot_joint_;
@@ -29,7 +32,7 @@ namespace sentry_chassis_controller {
             // 初始化PID控制器对象
             control_toolbox::Pid pid_lf_, pid_rf_, pid_lb_, pid_rb_;
             control_toolbox::Pid pid_lf_wheel_, pid_rf_wheel_, pid_lb_wheel_, pid_rb_wheel_;
-            // 
+            // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
 
     };
