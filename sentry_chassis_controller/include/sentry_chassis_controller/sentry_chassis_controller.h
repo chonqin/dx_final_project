@@ -6,6 +6,7 @@
 #include <controller_interface/controller.h>
 #include <ros/ros.h>
 #include <string>
+#include <array>
 /*自定义头文件依赖*/
 #include "sentry_chassis_controller/kinematics.h"
 namespace sentry_chassis_controller {
@@ -29,6 +30,8 @@ namespace sentry_chassis_controller {
             double max_wheel_speed_, max_pivot_speed_;// 最大车轮速度和最大转向速度     
             double pivot_cmd_[4][4];//关节角度转向数组
             double wheel_cmd_[4][4];//车轮速度数组
+            //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
+            int test_mode_ = 0 ;
             // 初始化PID控制器对象
             control_toolbox::Pid pid_lf_, pid_rf_, pid_lb_, pid_rb_;
             control_toolbox::Pid pid_lf_wheel_, pid_rf_wheel_, pid_lb_wheel_, pid_rb_wheel_;

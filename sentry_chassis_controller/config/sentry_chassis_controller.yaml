@@ -48,7 +48,7 @@ pid:
     d: 0.1
     i_max: 0.0
     i_min: 0.0
-  pack_right_pivot:
+  back_right_pivot:
     p: 2.0    
     i: 0.0  
     d: 0.1
