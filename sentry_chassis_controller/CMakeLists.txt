@@ -17,7 +17,9 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
 )
-
+# 加入choose_testmode.cpp编译
+add_executable(choose_testmode_node src/choose_testmode.cpp)
+target_link_libraries(choose_testmode_node ${catkin_LIBRARIES})
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 

@@ -2,6 +2,7 @@
 
 
 
+
 namespace sentry_chassis_controller {
   /*ros_control init函数*/
   bool SentryChassisController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
@@ -29,7 +30,9 @@ namespace sentry_chassis_controller {
     //从yaml文件加载参数
     controller_param_load(controller_nh);                                
     
-    ROS_INFO("参数加载成功！");
+     test_mode_sub_ = controller_nh.subscribe<std_msgs::Int32>(
+        "/test_mode", 1, &SentryChassisController::testmode_callback, this);
+    ROS_INFO("参数加载成功！等待键盘输入测试模式...");
     return true;
 
   }
@@ -37,11 +40,12 @@ namespace sentry_chassis_controller {
   /*ros_control update函数*/
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
         // 控制逻辑实现
-
-        
-       
   }
-
+       
+  void SentryChassisController::testmode_callback(const std_msgs::Int32::ConstPtr& msg){
+    test_mode_ = msg->data;
+    ROS_INFO("测试模式已切换为: %d", test_mode_);
+  }
   /*参数加载函数，从yaml文件获取参数*/
   void SentryChassisController::controller_param_load(ros::NodeHandle &controller_nh) {
     //从参数服务器获取车轮间距和轴距参数

@@ -7,6 +7,7 @@
 #include <ros/ros.h>
 #include <string>
 #include <array>
+#include <std_msgs/Int32.h>
 /*自定义头文件依赖*/
 #include "sentry_chassis_controller/kinematics.h"
 namespace sentry_chassis_controller {
@@ -22,6 +23,7 @@ namespace sentry_chassis_controller {
             // 更新函数，重写基类的update函数        
             void update(const ros::Time& time, const ros::Duration& period) override;
 
+            ros::Subscriber test_mode_sub_;    
             hardware_interface::JointHandle front_left_pivot_joint_, front_right_pivot_joint_, back_left_pivot_joint_, back_right_pivot_joint_;
             hardware_interface::JointHandle front_left_wheel_joint_, front_right_wheel_joint_,
                                             back_left_wheel_joint_, back_right_wheel_joint_;
@@ -33,10 +35,13 @@ namespace sentry_chassis_controller {
             //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
             int test_mode_ = 0 ;
             // 初始化PID控制器对象
-            control_toolbox::Pid pid_lf_, pid_rf_, pid_lb_, pid_rb_;
-            control_toolbox::Pid pid_lf_wheel_, pid_rf_wheel_, pid_lb_wheel_, pid_rb_wheel_;
+            std::array<control_toolbox::Pid, 4> pivot_pids_;
+            std::array<control_toolbox::Pid, 4> wheel_pids_;
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
+            void testmode_callback(const std_msgs::Int32::ConstPtr& msg);
+
+            
 
     };
 }// namespace sentry_chassis_controller
