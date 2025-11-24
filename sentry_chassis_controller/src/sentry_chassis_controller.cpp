@@ -32,7 +32,7 @@ namespace sentry_chassis_controller {
     return true;
     }
   
-    void SentryChassisController::controller_param_load(ros::NodeHandle &controller_nh) {
+  void SentryChassisController::controller_param_load(ros::NodeHandle &controller_nh) {
     //从参数服务器获取车轮间距和轴距参数
     wheel_track_ = controller_nh.param("wheel_track", 0.362);
     wheel_base_ = controller_nh.param("wheel_base", 0.362);
@@ -74,7 +74,14 @@ namespace sentry_chassis_controller {
       pivot_pids_[j].initPid(p, i, d, i_max, i_min);
     }
       
-}
+  }
+  void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
+        // 控制逻辑实现
+
+        //注册插件
+        PLUGINLIB_EXPORT_CLASS(simple_chassis_controller::SimpleChassisController, 
+          controller_interface::ControllerBase)
+  }
 
 }
   
