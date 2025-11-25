@@ -7,25 +7,18 @@ namespace sentry_chassis_controller {
   /*ros_control init函数*/
   bool SentryChassisController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
                                    ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh) {
-    //获取四个轮子句柄
-    front_left_wheel_joint_ =
-      effort_joint_interface->getHandle("left_front_wheel_joint");
-    front_right_wheel_joint_ =
-      effort_joint_interface->getHandle("right_front_wheel_joint");
-    back_left_wheel_joint_ = 
-      effort_joint_interface->getHandle("left_back_wheel_joint");
-    back_right_wheel_joint_ =
-      effort_joint_interface->getHandle("right_back_wheel_joint");
-    //获取四个转向关节句柄
-    front_left_pivot_joint_ =
-      effort_joint_interface->getHandle("left_front_pivot_joint");
-    front_right_pivot_joint_ =
-      effort_joint_interface->getHandle("right_front_pivot_joint");
-    back_left_pivot_joint_ = 
-      effort_joint_interface->getHandle("left_back_pivot_joint");
-    back_right_pivot_joint_ =
-      effort_joint_interface->getHandle("right_back_pivot_joint"); 
-      
+    //由于urdf中定义了四个转向关节和四个车轮关节，这里定义对应的名字数组
+    const std::array<std::string, 4> pivot_names = {
+      "left_front_pivot_joint", "right_front_pivot_joint", 
+      "left_back_pivot_joint", "right_back_pivot_joint"};
+    const std::array<std::string, 4> wheel_names = {
+      "left_front_wheel_joint", "right_front_wheel_joint", 
+      "left_back_wheel_joint", "right_back_wheel_joint"};
+    //获取四个轮子句柄，四个转向关节句柄，索引0-3分别对应左前，右前，左后，右后  
+    for(size_t i = 0; i < 4; ++i) {
+      pivot_joints_[i] = effort_joint_interface->getHandle(pivot_names[i]);
+      wheel_joints_[i] = effort_joint_interface->getHandle(wheel_names[i]);
+    }  
     ROS_INFO("关节句柄获取成功！");  
     //从yaml文件加载参数
     controller_param_load(controller_nh);                                
