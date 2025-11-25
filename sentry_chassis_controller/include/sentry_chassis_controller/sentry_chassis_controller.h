@@ -11,6 +11,8 @@
 #include <std_msgs/Int32.h>
 /*自定义头文件依赖*/
 #include "sentry_chassis_controller/kinematics.h"
+#include "sentry_chassis_controller/test_function.h"
+
 namespace sentry_chassis_controller {
     // 定义SentryChassisController类,继承自controller_interface::Controller模板类
     class SentryChassisController : public controller_interface::Controller<hardware_interface::EffortJointInterface> {
