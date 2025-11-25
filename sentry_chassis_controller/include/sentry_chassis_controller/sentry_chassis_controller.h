@@ -11,7 +11,7 @@
 #include <std_msgs/Int32.h>
 /*自定义头文件依赖*/
 #include "sentry_chassis_controller/kinematics.h"
-#include "sentry_chassis_controller/test_function.h"
+#include "sentry_chassis_controller/test_pid.h"
 
 namespace sentry_chassis_controller {
     // 定义SentryChassisController类,继承自controller_interface::Controller模板类
@@ -38,9 +38,17 @@ namespace sentry_chassis_controller {
             double wheel_cmd_[4][4];//车轮速度数组
             //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
             int test_mode_ = 0 ;
-            // 初始化PID控制器对象
+            // 定义轮子名字数组,方便传参
+            const std::array<std::string, 4> wheel_names = {
+                "front_left", "front_right", "back_left", "back_right"};
+            // PID控制器对象
             std::array<control_toolbox::Pid, 4> pivot_pids_;
             std::array<control_toolbox::Pid, 4> wheel_pids_;
+            // PID发布数据对象
+            std::array<ros::Publisher, 4> wheel_target_pub;
+            std::array<ros::Publisher, 4> wheel_actual_pub;
+            std::array<ros::Publisher, 4> pivot_target_pub;
+            std::array<ros::Publisher, 4> pivot_actual_pub;
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);

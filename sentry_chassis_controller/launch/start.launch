@@ -3,7 +3,7 @@
   <include file="$(find rm_description)/launch/sentry.launch">
     <arg name="load_chassis" value="true"/>
     <arg name="roller_type" value="realistic"/>
-    <arg name="paused" value="true"/>
+    <arg name="paused" value="false"/>
   </include>
 
   <!-- 加载yaml参数文件 -->

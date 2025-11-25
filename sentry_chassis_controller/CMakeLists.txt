@@ -28,7 +28,7 @@ include_directories(
 add_library(${PROJECT_NAME}
   src/sentry_chassis_controller.cpp
   src/kinematics.cpp
-  src/test_function.cpp
+  src/test_pid.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
