@@ -2,6 +2,7 @@
 #define SENTRY_CHASSIS_CONTROLLER_SENTRY_CHASSIS_CONTROLLER_H
 /*ros官方头文件依赖*/
 #include <control_toolbox/pid.h>
+#include <pluginlib/class_list_macros.hpp>
 #include <hardware_interface/joint_command_interface.h>
 #include <controller_interface/controller.h>
 #include <ros/ros.h>

@@ -4,6 +4,7 @@
 #include <limits>
 
 int main(int argc, char** argv) {
+    setlocale(LC_ALL, "");
     ros::init(argc, argv, "choose_testmode_node");
     ros::NodeHandle nh;
 

@@ -90,8 +90,7 @@ namespace sentry_chassis_controller {
     }
       
   }
-  //注册插件
-  PLUGINLIB_EXPORT_CLASS(sentry_chassis_controller::SentryChassisController, 
-          controller_interface::ControllerBase)
-}
   
+}
+PLUGINLIB_EXPORT_CLASS(sentry_chassis_controller::SentryChassisController, 
+          controller_interface::ControllerBase)
