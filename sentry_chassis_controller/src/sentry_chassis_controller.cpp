@@ -32,7 +32,15 @@ namespace sentry_chassis_controller {
   
   /*ros_control update函数*/
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
-        // 控制逻辑实现
+      switch (test_mode_){
+      case 1:
+        test_pivots_pid(pivot_joints_,pivot_pids_, period);
+        break;
+      case 2:
+        test_wheels_pid(wheel_joints_,wheel_pids_, period);
+        break;
+        
+      }
   }
        
   void SentryChassisController::testmode_callback(const std_msgs::Int32::ConstPtr& msg){

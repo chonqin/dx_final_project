@@ -1,57 +1,63 @@
-# 底盘参数
-wheel_track: 0.362
-wheel_base: 0.362
-max_pivot_speed: 5.0
-max_wheel_speed: 10.0
+sentry_chassis_controller:
+  type: sentry_chassis_controller/SentryChassisController 
 
-# PID 参数
-pid:
-  front_left_wheel:
-    p: 2.0    
-    i: 0.0
-    d: 0.1
-    i_max: 0.0
-    i_min: 0.0
-  front_right_wheel:
-    p: 2.0    
-    i: 0.0
-    d: 0.1
-    i_max: 0.0
-    i_min: 0.0
-  back_left_wheel:
-    p: 2.0    
-    i: 0.0
-    d: 0.1
-    i_max: 0.0
-    i_min: 0.0
-  back_right_wheel:
-    p: 2.0    
-    i: 0.0
-    d: 0.1
-    i_max: 0.0
-    i_min: 0.0
-  front_left_pivot:
-    p: 2.0    
-    i: 0.0
-    d: 0.1
-    i_max: 0.0
-    i_min: 0.0
-  front_right_pivot:
-    p: 2.0    
-    i: 0.0
-    d: 0.1
-    i_max: 0.0
-    i_min: 0.0
-  back_left_pivot:
-    p: 2.0    
-    i: 0.0
-    d: 0.1
-    i_max: 0.0
-    i_min: 0.0
-  back_right_pivot:
-    p: 2.0    
-    i: 0.0  
-    d: 0.1
-    i_max: 0.0
-    i_min: 0.0
-           
+  # 底盘参数
+  wheel_track: 0.362
+  wheel_base: 0.362
+  max_pivot_speed: 5.0
+  max_wheel_speed: 10.0
+
+  # PID 参数
+  pid:
+    front_left_wheel:
+      p: 2.0    
+      i: 0.0 
+      d: 0.1
+      i_max: 0.0
+      i_min: 0.0
+    front_right_wheel:
+      p: 2.0    
+      i: 0.0
+      d: 0.1
+      i_max: 0.0
+      i_min: 0.0
+    back_left_wheel:
+      p: 2.0    
+      i: 0.0
+      d: 0.1
+      i_max: 0.0
+      i_min: 0.0
+    back_right_wheel:
+      p: 2.0    
+      i: 0.0
+      d: 0.1
+      i_max: 0.0
+      i_min: 0.0
+    front_left_pivot:
+      p: 2.0    
+      i: 0.0
+      d: 0.1
+      i_max: 0.0
+      i_min: 0.0
+    front_right_pivot:
+      p: 2.0    
+      i: 0.0
+      d: 0.1
+      i_max: 0.0
+      i_min: 0.0
+    back_left_pivot:
+      p: 2.0    
+      i: 0.0
+      d: 0.1
+      i_max: 0.0
+      i_min: 0.0
+    back_right_pivot:
+      p: 2.0    
+      i: 0.0  
+      d: 0.1
+      i_max: 0.0
+      i_min: 0.0
+      
+joint_state_controller:
+  type: joint_state_controller/JointStateController
+  publish_rate: 50            
