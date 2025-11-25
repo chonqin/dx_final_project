@@ -34,9 +34,9 @@ namespace sentry_chassis_controller {
         // 对每个轮子进行PID控制测试，i为轮子索引，索引0-3统一。
         for (size_t i = 0; i < pivot_joints.size(); ++i) {
             // 获取当前速度
-            double current_velocity = pivot_joints[i].getVelocity();
+            double current_positon = pivot_joints[i].getPosition();
             // 计算控制输出
-            double output = pivot_pids[i].computeCommand(target_angle-current_velocity, period);
+            double output = pivot_pids[i].computeCommand(target_angle-current_positon, period);
             // 应用控制输出
             pivot_joints[i].setCommand(output);
         }                    

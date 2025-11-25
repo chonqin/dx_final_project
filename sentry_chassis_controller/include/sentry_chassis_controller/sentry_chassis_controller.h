@@ -25,9 +25,10 @@ namespace sentry_chassis_controller {
             void update(const ros::Time& time, const ros::Duration& period) override;
 
             ros::Subscriber test_mode_sub_;    
-            hardware_interface::JointHandle front_left_pivot_joint_, front_right_pivot_joint_, back_left_pivot_joint_, back_right_pivot_joint_;
-            hardware_interface::JointHandle front_left_wheel_joint_, front_right_wheel_joint_,
-                                            back_left_wheel_joint_, back_right_wheel_joint_;
+            // 定义四个转向关节和四个车轮的句柄数组
+            std::array<hardware_interface::JointHandle, 4> pivot_joints_;
+            std::array<hardware_interface::JointHandle, 4> wheel_joints_;    
+
         private:
             double wheel_base_, wheel_track_;// 车轮间距和轴距
             double max_wheel_speed_, max_pivot_speed_;// 最大车轮速度和最大转向速度     
