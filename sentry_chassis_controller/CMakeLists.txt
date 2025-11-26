@@ -11,14 +11,16 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   tf2_ros
   nav_msgs
+  dynamic_reconfigure
 )
-
+generate_dynamic_reconfigure_options(
+  config/sentry_chassis_controller.cfg
+)
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES ${PROJECT_NAME}
-  CATKIN_DEPENDS control_toolbox controller_interface hardware_interface pluginlib roscpp std_msgs
+  CATKIN_DEPENDS control_toolbox controller_interface hardware_interface pluginlib roscpp std_msgs geometry_msgs nav_msgs dynamic_reconfigure
 )
-
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}

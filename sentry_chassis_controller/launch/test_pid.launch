@@ -1,0 +1,24 @@
+<launch>
+  <!--启动gazebo仿真，并加载底盘模型-->
+  <include file="$(find rm_description)/launch/sentry.launch">
+    <arg name="load_chassis" value="true"/>
+    <arg name="roller_type" value="realistic"/>
+    <arg name="paused" value="false"/>
+  </include>
+
+  <!-- 加载yaml参数文件 -->
+  <rosparam file="$(find sentry_chassis_controller)/config/sentry_chassis_controller.yaml" command="load" />
+  <!-- 启动底盘控制器节点 -->
+  <node name="controller_spawner" pkg="controller_manager" 
+  type="spawner" args="sentry_chassis_controller joint_state_controller" 
+  output="screen" respawn="false"/>
+
+  <!--  启动键盘输入节点 , 在一个新的终端窗口中显示-->
+  <node name="choose_testmode" pkg="sentry_chassis_controller" type="choose_testmode_node" 
+  output="screen" />
+  
+  <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot" />
+
+  <!-- 启动 rqt_reconfigure（Dynamic Reconfigure GUI） -->
+  <node pkg="rqt_reconfigure" type="rqt_reconfigure" name="rqt_reconfigure" /> 
+</launch>

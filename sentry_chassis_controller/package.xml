@@ -88,5 +88,6 @@
   <!-- The export tag contains other, unspecified, tags -->
   <export>
     <controller_interface plugin="${prefix}/sentry_chassis_controller_plugins.xml"/>
+    <dynamic_reconfigure/>
   </export>
 </package>
