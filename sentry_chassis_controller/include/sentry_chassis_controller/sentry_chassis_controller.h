@@ -9,9 +9,13 @@
 #include <string>
 #include <array>
 #include <std_msgs/Int32.h>
+#include <dynamic_reconfigure/server.h>
+#include <sentry_chassis_controller/SentryChassisControllerConfig.h>
+
 /*自定义头文件依赖*/
 #include "sentry_chassis_controller/kinematics.h"
 #include "sentry_chassis_controller/test_pid.h"
+
 
 namespace sentry_chassis_controller {
     // 定义SentryChassisController类,继承自controller_interface::Controller模板类
@@ -49,10 +53,13 @@ namespace sentry_chassis_controller {
             std::array<ros::Publisher, 4> wheel_actual_pub;
             std::array<ros::Publisher, 4> pivot_target_pub;
             std::array<ros::Publisher, 4> pivot_actual_pub;
+            //dynamic_reconfigure 服务器对象
+            std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
+
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);
-
+            void dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level);    
             
 
     };

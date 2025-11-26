@@ -1,4 +1,5 @@
 #include "sentry_chassis_controller/sentry_chassis_controller.h"
+
 namespace sentry_chassis_controller {
   /*ros_control init函数*/
   bool SentryChassisController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
@@ -27,8 +28,16 @@ namespace sentry_chassis_controller {
         pivot_target_pub[i] = controller_nh.advertise<std_msgs::Float64>(wheel_names[i] + "_pivot/target", 1);
         pivot_actual_pub[i] = controller_nh.advertise<std_msgs::Float64>(wheel_names[i] + "_pivot/actual", 1);
     }
+    //初始化 dynamic_reconfigure 服务器，并设置回调函数
+    dynamic_server.reset(new dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>(controller_nh));
+    dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>::CallbackType f =
+    boost::bind(&SentryChassisController::dynamicReconfigureCallback, this, _1, _2);
+    dynamic_server->setCallback(f);
+    
+    // 订阅测试模式话题  
     test_mode_sub_ = controller_nh.subscribe<std_msgs::Int32>(
         "/test_mode", 1, &SentryChassisController::testmode_callback, this);
+
     ROS_INFO("参数加载成功！等待键盘输入测试模式...");
     return true;
 
@@ -47,11 +56,46 @@ namespace sentry_chassis_controller {
         
       }
   }
-       
+  
+  /*测试模式回调函数*/
   void SentryChassisController::testmode_callback(const std_msgs::Int32::ConstPtr& msg){
     test_mode_ = msg->data;
     ROS_INFO("测试模式已切换为: %d", test_mode_);
   }
+  void SentryChassisController::dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level) {
+    ROS_INFO("Dynamic reconfigure 更新PID参数");
+    
+    // 更新驱动 PID 参数 ，索引 0-3 分别对应左前，右前，左后，右后
+    wheel_pids_[0].setGains(config.front_left_wheel_p, config.front_left_wheel_i, 
+      config.front_left_wheel_d, config.front_left_wheel_i_max, config.front_left_wheel_i_min);
+    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.2f", 
+             config.front_left_wheel_p,
+             config.front_left_wheel_i,
+             config.front_left_wheel_d);  
+    wheel_pids_[1].setGains(config.front_right_wheel_p, config.front_right_wheel_i, 
+      config.front_right_wheel_d, config.front_right_wheel_i_max, config.front_right_wheel_i_min);
+
+    wheel_pids_[2].setGains(config.back_left_wheel_p, config.back_left_wheel_i,
+      config.back_left_wheel_d, config.back_left_wheel_i_max, config.back_left_wheel_i_min);
+
+    wheel_pids_[3].setGains(config.back_right_wheel_p, config.back_right_wheel_i, 
+      config.back_right_wheel_d, config.back_right_wheel_i_max, config.back_right_wheel_i_min);
+    // 更新转向 PID 参数 ，索引 0-3 分别对应左前，右前，左后，右后
+    pivot_pids_[0].setGains(config.front_left_pivot_p, config.front_left_pivot_i,
+      config.front_left_pivot_d, config.front_left_pivot_i_max, config.front_left_pivot_i_min);
+
+    pivot_pids_[1].setGains(config.front_right_pivot_p, config.front_right_pivot_i, 
+      config.front_right_pivot_d, config.front_right_pivot_i_max, config.front_right_pivot_i_min);
+    
+    pivot_pids_[2].setGains(config.back_left_pivot_p, config.back_left_pivot_i,
+      config.back_left_pivot_d, config.back_left_pivot_i_max, config.back_left_pivot_i_min);
+    
+    pivot_pids_[3].setGains(config.back_right_pivot_p, config.back_right_pivot_i, 
+      config.back_right_pivot_d, config.back_right_pivot_i_max, config.back_right_pivot_i_min);
+  }
+
+  
+
   /*参数加载函数，从yaml文件获取参数*/
   void SentryChassisController::controller_param_load(ros::NodeHandle &controller_nh) {
     //从参数服务器获取车轮间距和轴距参数
@@ -89,7 +133,10 @@ namespace sentry_chassis_controller {
       //初始化对应的pid对象
       pivot_pids_[j].initPid(p, i, d, i_max, i_min);
     }
-      
+    for (size_t i = 0; i < 4; ++i) {
+      wheel_pids_[i].reset();
+      pivot_pids_[i].reset();
+    }  
   }
   
 }

@@ -10,53 +10,53 @@ sentry_chassis_controller:
   # PID 参数
   pid:
     front_left_wheel:
-      p: 2.0    
-      i: 0.0 
-      d: 0.1
-      i_max: 0.0
-      i_min: 0.0
+      p: 1.0    
+      i: 0.0
+      d: 0.0
+      i_max: 2.0
+      i_min: -2.0
     front_right_wheel:
-      p: 2.0    
+      p: 1.0    
       i: 0.0
-      d: 0.1
-      i_max: 0.0
-      i_min: 0.0
+      d: 0.0
+      i_max: 2.0
+      i_min: -2.0
     back_left_wheel:
-      p: 2.0    
+      p: 1.0    
       i: 0.0
-      d: 0.1
-      i_max: 0.0
-      i_min: 0.0
+      d: 0.0
+      i_max: 2.0
+      i_min: -2.0
     back_right_wheel:
-      p: 2.0    
-      i: 0.0
+      p: 10.0    
+      i: 0.5 
       d: 0.1
-      i_max: 0.0
-      i_min: 0.0
+      i_max: 2.0
+      i_min: -2.0
     front_left_pivot:
-      p: 2.0    
+      p: 1.0    
       i: 0.0
-      d: 0.1
-      i_max: 0.0
-      i_min: 0.0
+      d: 0.0
+      i_max: 2.0
+      i_min: -2.0
     front_right_pivot:
-      p: 2.0    
+      p: 1.0    
       i: 0.0
-      d: 0.1
-      i_max: 0.0
-      i_min: 0.0
+      d: 0.0
+      i_max: 2.0
+      i_min: -2.0
     back_left_pivot:
-      p: 2.0    
+      p: 1.0    
       i: 0.0
-      d: 0.1
-      i_max: 0.0
-      i_min: 0.0
+      d: 0.0
+      i_max: 2.0
+      i_min: -2.0
     back_right_pivot:
-      p: 2.0    
-      i: 0.0  
-      d: 0.1
-      i_max: 0.0
-      i_min: 0.0
+      p: 1.0    
+      i: 0.0
+      d: 0.0
+      i_max: 2.0
+      i_min: -2.0
       
 joint_state_controller:
   type: joint_state_controller/JointStateController
