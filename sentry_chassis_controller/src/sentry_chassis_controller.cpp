@@ -48,10 +48,10 @@ namespace sentry_chassis_controller {
       
       switch (test_mode_){
       case 1:
-        test_pivots_pid(pivot_joints_,pivot_pids_, pivot_target_pub, pivot_actual_pub, period);
+        test_pivots_pid(pivot_joints_,pivot_pids_, pivot_target_pub, pivot_actual_pub,target_, period);
         break;
       case 2:
-        test_wheels_pid(wheel_joints_,wheel_pids_, wheel_target_pub, wheel_actual_pub, period);
+        test_wheels_pid(wheel_joints_,wheel_pids_, wheel_target_pub, wheel_actual_pub, target_, period);
         break;
         
       }
@@ -68,10 +68,7 @@ namespace sentry_chassis_controller {
     // 更新驱动 PID 参数 ，索引 0-3 分别对应左前，右前，左后，右后
     wheel_pids_[0].setGains(config.front_left_wheel_p, config.front_left_wheel_i, 
       config.front_left_wheel_d, config.front_left_wheel_i_max, config.front_left_wheel_i_min);
-    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.2f", 
-             config.front_left_wheel_p,
-             config.front_left_wheel_i,
-             config.front_left_wheel_d);  
+    
     wheel_pids_[1].setGains(config.front_right_wheel_p, config.front_right_wheel_i, 
       config.front_right_wheel_d, config.front_right_wheel_i_max, config.front_right_wheel_i_min);
 
@@ -92,6 +89,13 @@ namespace sentry_chassis_controller {
     
     pivot_pids_[3].setGains(config.back_right_pivot_p, config.back_right_pivot_i, 
       config.back_right_pivot_d, config.back_right_pivot_i_max, config.back_right_pivot_i_min);
+    
+    target_ = config.target;
+    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.2f target:%.2f", 
+             config.front_left_wheel_p,
+             config.front_left_wheel_i,
+             config.front_left_wheel_d,
+             config.target);    
   }
 
   

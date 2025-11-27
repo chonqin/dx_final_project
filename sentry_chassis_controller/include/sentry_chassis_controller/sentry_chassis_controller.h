@@ -42,6 +42,8 @@ namespace sentry_chassis_controller {
             double wheel_cmd_[4][4];//车轮速度数组
             //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
             int test_mode_ = 0 ;
+            double target_ = 10.0; // 目标参数，用于测试pid参数效果
+
             // 定义轮子名字数组,方便传参
             const std::array<std::string, 4> wheel_names = {
                 "front_left", "front_right", "back_left", "back_right"};

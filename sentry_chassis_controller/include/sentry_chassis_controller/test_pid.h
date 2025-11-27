@@ -16,12 +16,14 @@ namespace sentry_chassis_controller {
                          std::array<control_toolbox::Pid, 4>& wheel_pids,
                          std::array<ros::Publisher, 4>& wheel_target_pub,
                          std::array<ros::Publisher, 4>& wheel_actual_pub,
+                         double target_,
                          const ros::Duration& period);
     /*测试转向舵轮pid*/                     
     void test_pivots_pid(std::array<hardware_interface::JointHandle, 4>& pivot_joints,
                          std::array<control_toolbox::Pid, 4>& pivot_pids,
                          std::array<ros::Publisher, 4>& pivot_target_pub,
                          std::array<ros::Publisher, 4>& pivot_actual_pub,
+                         double target_,
                          const ros::Duration& period);    
 }
 
