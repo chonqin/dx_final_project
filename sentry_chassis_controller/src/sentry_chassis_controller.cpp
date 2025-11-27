@@ -91,7 +91,7 @@ namespace sentry_chassis_controller {
       config.back_right_pivot_d, config.back_right_pivot_i_max, config.back_right_pivot_i_min);
     
     target_ = config.target;
-    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.2f target:%.2f", 
+    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.4f target:%.2f", 
              config.front_left_wheel_p,
              config.front_left_wheel_i,
              config.front_left_wheel_d,
