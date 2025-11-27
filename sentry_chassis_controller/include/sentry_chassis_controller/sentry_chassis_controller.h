@@ -37,13 +37,13 @@ namespace sentry_chassis_controller {
 
         private:
             double wheel_base_, wheel_track_;// 车轮间距和轴距
-            double max_wheel_speed_, max_pivot_speed_;// 最大车轮速度和最大转向速度     
-            double pivot_cmd_[4][4];//关节角度转向数组
-            double wheel_cmd_[4][4];//车轮速度数组
+            
             //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
             int test_mode_ = 0 ;
-            double target_ = 10.0; // 目标参数，用于测试pid参数效果
-
+            double target_ = 10.0; // 目标，用于测试pid参数效果
+            // 存储四个驱动轮速度和转向轮转向角度
+            std::array<double, 4> wheel_speed= {0.0, 0.0, 0.0, 0.0}; 
+            std::array<double, 4> steering_angle= {0.0, 0.0, 0.0, 0.0}; 
             // 定义轮子名字数组,方便传参
             const std::array<std::string, 4> wheel_names = {
                 "front_left", "front_right", "back_left", "back_right"};
@@ -57,7 +57,8 @@ namespace sentry_chassis_controller {
             std::array<ros::Publisher, 4> pivot_actual_pub;
             //dynamic_reconfigure 服务器对象
             std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
-
+            // 接收cmd_vel话题回调对象
+            ros::Subscriber cmd_vel_sub;
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);

@@ -9,7 +9,8 @@ namespace sentry_chassis_controller {
     // 运动学Kinematics类,包含逆运动学和正运动学函数
     class Kinematics {
         public:
-            Kinematics(double wheel_base, double wheel_track);
+            Kinematics(double wheel_base, double wheel_track,double wheel_radius)
+                : wheel_base_(wheel_base), wheel_track_(wheel_track), wheel_radius_(wheel_radius) {};
             ~Kinematics() = default;
             /*
                 Kinematics::Inverse_solution
@@ -31,7 +32,8 @@ namespace sentry_chassis_controller {
                                    double &vx, double &vy, double &omega);    
         private:
             double wheel_base_;  // 轴距
-            double wheel_track_; // 轮距        
+            double wheel_track_; // 轮距  
+            double wheel_radius_; // 轮子半径
 
     };  
     

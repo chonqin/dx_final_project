@@ -4,8 +4,7 @@ sentry_chassis_controller:
   # 底盘参数
   wheel_track: 0.362
   wheel_base: 0.362
-  max_pivot_speed: 5.0
-  max_wheel_speed: 10.0
+  wheel_radius: 0.055
 
   # PID 参数
   pid:

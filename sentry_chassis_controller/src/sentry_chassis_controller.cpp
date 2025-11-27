@@ -37,6 +37,9 @@ namespace sentry_chassis_controller {
     // 订阅测试模式话题  
     test_mode_sub_ = controller_nh.subscribe<std_msgs::Int32>(
         "/test_mode", 1, &SentryChassisController::testmode_callback, this);
+    // 订阅cmd_vel话题
+    cmd_vel_sub = controller_nh.subscribe<geometry_msgs::Twist>(
+      "/cmd_vel", 1, &SentryChassisController::vel_callback, this);
 
     ROS_INFO("参数加载成功！等待键盘输入测试模式...");
     return true;
@@ -57,6 +60,19 @@ namespace sentry_chassis_controller {
       }
   }
   
+  /*接收cmd_vel话题回调函数*/
+  void SentryChassisController::vel_callback(const geometry_msgs::Twist::ConstPtr& msg){
+    // 提取线速度和角速度
+    double vx = msg->linear.x;
+    double vy = msg->linear.y;
+    double omega = msg->angular.z;
+    // 定义存储轮速和转向角度的数组,索引0-3分别对应左前，右前，左后，右后
+    // 调用逆运动学函数计算轮速和转向角度，并存储在对应数组中
+    Kinematics kinematics_solver(wheel_base_, wheel_track_);
+    kinematics_solver.Inverse_solution(vx, vy, omega,wheel_speed, steering_angle);
+
+  }
+
   /*测试模式回调函数*/
   void SentryChassisController::testmode_callback(const std_msgs::Int32::ConstPtr& msg){
     test_mode_ = msg->data;
@@ -102,12 +118,11 @@ namespace sentry_chassis_controller {
 
   /*参数加载函数，从yaml文件获取参数*/
   void SentryChassisController::controller_param_load(ros::NodeHandle &controller_nh) {
-    //从参数服务器获取车轮间距和轴距参数
+    //从参数服务器获取车轮间距、轴距参数、轮子半径参数
     wheel_track_ = controller_nh.param("wheel_track", 0.362);
     wheel_base_ = controller_nh.param("wheel_base", 0.362);
-    //从参数服务器获取最大车轮速度和最大转向速度参数
-    max_wheel_speed_ = controller_nh.param("max_wheel_speed", 10.0);
-    max_pivot_speed_ = controller_nh.param("max_pivot_speed", 5.0);
+    wheel_radius_ = controller_nh.param("wheel_radius", 0.055);
+
     /*从参数服务器获取八组PID参数*/  
     //加载轮速pid参数 
     for (size_t j = 0; j < 4; j++){
