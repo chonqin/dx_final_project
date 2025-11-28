@@ -68,9 +68,11 @@ namespace sentry_chassis_controller {
     double omega = msg->angular.z;
     // 定义存储轮速和转向角度的数组,索引0-3分别对应左前，右前，左后，右后
     // 调用逆运动学函数计算轮速和转向角度，并存储在对应数组中
-    Kinematics kinematics_solver(wheel_base_, wheel_track_);
-    kinematics_solver.Inverse_solution(vx, vy, omega,wheel_speed, steering_angle);
-
+    Inverse_solution(vx, vy, omega,wheel_base_, wheel_track_ , wheel_radius_, wheel_speed, steering_angle);
+    ROS_INFO("接收到cmd_vel指令:vx=%.2f, vy=%.2f, omega=%.2f |  解算得到: wheel_speed=[%.2f, %.2f, %.2f, %.2f], steering_angle=[%.2f, %.2f, %.2f, %.2f]", 
+              vx, vy, omega,
+              wheel_speed[0], wheel_speed[1], wheel_speed[2], wheel_speed[3],
+              steering_angle[0], steering_angle[1], steering_angle[2], steering_angle[3]);
   }
 
   /*测试模式回调函数*/

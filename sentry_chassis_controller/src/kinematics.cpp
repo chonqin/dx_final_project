@@ -1,8 +1,6 @@
 #include "sentry_chassis_controller/kinematics.h"
 
 namespace sentry_chassis_controller {
-    Kinematics::Kinematics(double wheel_base, double wheel_track ,double wheel_radius)
-        : wheel_base_(wheel_base), wheel_track_(wheel_track), wheel_radius_(wheel_radius) {}
     /*
         Kinematics::Inverse_solution
         逆运动学：将底盘的速度转化为轮速和转向角度
@@ -15,9 +13,10 @@ namespace sentry_chassis_controller {
         输入： 四个轮子的速度wheel_speed和转向角度steering_angle
         输出： 底盘线速度vx, vy和角速度omega
     */        
-    void Kinematics::Inverse_solution(double vx, double vy, double omega,
-                                    std::array<double, 4> &wheel_speed,
-                                    std::array<double, 4> &steering_angle) {
+    void Inverse_solution(double vx, double vy, double omega,double wheel_base_, 
+                            double wheel_track_ , double wheel_radius_,
+                            std::array<double, 4> &wheel_speed,
+                            std::array<double, 4> &steering_angle) {
         // 计算解算所需投影点到车体中心的距离参数
         const double L = wheel_base_/2.0;
         const double W = wheel_track_/2.0;
@@ -30,9 +29,10 @@ namespace sentry_chassis_controller {
             steering_angle[i] = std::atan2(vx - a* omega * R, vy + a* omega * R);                         
         }
     }
-    void Kinematics::forward_solution(const std::array<double, 4> &wheel_speed,
-                                   const std::array<double, 4> &steering_angle,
-                                   double &vx, double &vy, double &omega) {
+    void forward_solution(const std::array<double, 4> &wheel_speed,
+                            const std::array<double, 4> &steering_angle,
+                            double wheel_base_, double wheel_track_ , double wheel_radius_,
+                            double &vx, double &vy, double &omega) {
         // 计算每个轮子的线速度在车体坐标系下的分量
         std::array<double, 4> wx;
         std::array<double, 4> wy;

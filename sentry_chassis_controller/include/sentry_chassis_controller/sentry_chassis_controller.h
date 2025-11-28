@@ -11,7 +11,7 @@
 #include <std_msgs/Int32.h>
 #include <dynamic_reconfigure/server.h>
 #include <sentry_chassis_controller/SentryChassisControllerConfig.h>
-
+#include <geometry_msgs/Twist.h>
 /*自定义头文件依赖*/
 #include "sentry_chassis_controller/kinematics.h"
 #include "sentry_chassis_controller/test_pid.h"
@@ -36,7 +36,7 @@ namespace sentry_chassis_controller {
             std::array<hardware_interface::JointHandle, 4> wheel_joints_;    
 
         private:
-            double wheel_base_, wheel_track_;// 车轮间距和轴距
+            double wheel_base_, wheel_track_ , wheel_radius_;// 车轮间距和轴距
             
             //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
             int test_mode_ = 0 ;
@@ -62,7 +62,8 @@ namespace sentry_chassis_controller {
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);
-            void dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level);    
+            void dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level);
+            void vel_callback(const geometry_msgs::Twist::ConstPtr& msg);
             
 
     };
