@@ -36,7 +36,6 @@ namespace sentry_chassis_controller {
             double wheel_radius_; // 轮子半径
 
     };  
-    
 
 }
 #endif // SENTRY_CHASSIS_CONTROLLER_KINEMATICS_H
