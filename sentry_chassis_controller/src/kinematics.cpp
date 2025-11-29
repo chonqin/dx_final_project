@@ -29,6 +29,18 @@ namespace sentry_chassis_controller {
             steering_angle[i] = std::atan2(vx - a* omega * R, vy + a* omega * R);                         
         }
     }
+    void test_inverse(double vx, double vy, double omega,double wheel_base_, 
+                            double wheel_track_ , double wheel_radius_,
+                            std::array<double, 4> &wheel_speed,
+                            std::array<double, 4> &steering_angle) {
+        // 调用逆运动学函数计算轮速和转向角度，并存储在对应数组中
+        // 这里的vx, vy, omega是从cmd_vel话题接收到的 
+        Inverse_solution(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_, wheel_speed, steering_angle);
+        // 输出解算结果
+        ROS_INFO("解算得到: wheel_speed=[%.2f, %.2f, %.2f, %.2f], steering_angle=[%.2f, %.2f, %.2f, %.2f]",
+                 wheel_speed[0], wheel_speed[1], wheel_speed[2], wheel_speed[3],
+                 steering_angle[0], steering_angle[1], steering_angle[2], steering_angle[3]);
+    }
     void forward_solution(const std::array<double, 4> &wheel_speed,
                             const std::array<double, 4> &steering_angle,
                             double wheel_base_, double wheel_track_ , double wheel_radius_,

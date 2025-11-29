@@ -41,6 +41,8 @@ namespace sentry_chassis_controller {
             //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
             int test_mode_ = 0 ;
             double target_ = 10.0; // 目标，用于测试pid参数效果
+            // 底盘运动学定义
+            double vx , vy, omega; // 线速度和角速度
             // 存储四个驱动轮速度和转向轮转向角度
             std::array<double, 4> wheel_speed= {0.0, 0.0, 0.0, 0.0}; 
             std::array<double, 4> steering_angle= {0.0, 0.0, 0.0, 0.0}; 

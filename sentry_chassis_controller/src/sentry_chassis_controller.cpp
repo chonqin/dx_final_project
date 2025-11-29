@@ -50,29 +50,26 @@ namespace sentry_chassis_controller {
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
       
       switch (test_mode_){
-      case 1:
+      case 1:// 测试转向轮pid
         test_pivots_pid(pivot_joints_,pivot_pids_, pivot_target_pub, pivot_actual_pub,target_, period);
         break;
-      case 2:
+      case 2:// 测试轮速pid
         test_wheels_pid(wheel_joints_,wheel_pids_, wheel_target_pub, wheel_actual_pub, target_, period);
         break;
-        
+      case 3:
+        // 测试逆运动学
+        test_inverse(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_,
+                                    wheel_speed, steering_angle);
       }
   }
   
   /*接收cmd_vel话题回调函数*/
   void SentryChassisController::vel_callback(const geometry_msgs::Twist::ConstPtr& msg){
-    // 提取线速度和角速度
+    // 回调函数只负责接收cmd_vel话题消息并提取
     double vx = msg->linear.x;
     double vy = msg->linear.y;
     double omega = msg->angular.z;
-    // 定义存储轮速和转向角度的数组,索引0-3分别对应左前，右前，左后，右后
-    // 调用逆运动学函数计算轮速和转向角度，并存储在对应数组中
-    Inverse_solution(vx, vy, omega,wheel_base_, wheel_track_ , wheel_radius_, wheel_speed, steering_angle);
-    ROS_INFO("接收到cmd_vel指令:vx=%.2f, vy=%.2f, omega=%.2f |  解算得到: wheel_speed=[%.2f, %.2f, %.2f, %.2f], steering_angle=[%.2f, %.2f, %.2f, %.2f]", 
-              vx, vy, omega,
-              wheel_speed[0], wheel_speed[1], wheel_speed[2], wheel_speed[3],
-              steering_angle[0], steering_angle[1], steering_angle[2], steering_angle[3]);
+    ROS_INFO("接收到cmd_vel指令:vx=%.2f, vy=%.2f, omega=%.2f ", vx, vy, omega);
   }
 
   /*测试模式回调函数*/

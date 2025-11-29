@@ -14,6 +14,7 @@ int main(int argc, char** argv) {
     std::cout << "  0: 停止测试" << std::endl;
     std::cout << "  1: 测试转向PID" << std::endl;
     std::cout << "  2: 测试驱动轮PID" << std::endl;
+    std::cout << "  3: 测试逆运动学" << std::endl;
 
     ros::Rate rate(10); // 10 Hz
     while (ros::ok()) {
