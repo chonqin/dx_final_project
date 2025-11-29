@@ -37,6 +37,9 @@ namespace sentry_chassis_controller {
     // 订阅测试模式话题  
     test_mode_sub_ = controller_nh.subscribe<std_msgs::Int32>(
         "/test_mode", 1, &SentryChassisController::testmode_callback, this);
+    // 订阅cmd_vel话题
+    cmd_vel_sub = controller_nh.subscribe<geometry_msgs::Twist>(
+      "/cmd_vel", 1, &SentryChassisController::vel_callback, this);
 
     ROS_INFO("参数加载成功！等待键盘输入测试模式...");
     return true;
@@ -47,16 +50,28 @@ namespace sentry_chassis_controller {
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
       
       switch (test_mode_){
-      case 1:
-        test_pivots_pid(pivot_joints_,pivot_pids_, pivot_target_pub, pivot_actual_pub, period);
+      case 1:// 测试转向轮pid
+        test_pivots_pid(pivot_joints_,pivot_pids_, pivot_target_pub, pivot_actual_pub,target_, period);
         break;
-      case 2:
-        test_wheels_pid(wheel_joints_,wheel_pids_, wheel_target_pub, wheel_actual_pub, period);
+      case 2:// 测试轮速pid
+        test_wheels_pid(wheel_joints_,wheel_pids_, wheel_target_pub, wheel_actual_pub, target_, period);
         break;
-        
+      case 3:
+        // 测试逆运动学
+        test_inverse(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_,
+                                    wheel_speed, steering_angle);
       }
   }
   
+  /*接收cmd_vel话题回调函数*/
+  void SentryChassisController::vel_callback(const geometry_msgs::Twist::ConstPtr& msg){
+    // 回调函数只负责接收cmd_vel话题消息并提取
+    double vx = msg->linear.x;
+    double vy = msg->linear.y;
+    double omega = msg->angular.z;
+    ROS_INFO("接收到cmd_vel指令:vx=%.2f, vy=%.2f, omega=%.2f ", vx, vy, omega);
+  }
+
   /*测试模式回调函数*/
   void SentryChassisController::testmode_callback(const std_msgs::Int32::ConstPtr& msg){
     test_mode_ = msg->data;
@@ -68,10 +83,7 @@ namespace sentry_chassis_controller {
     // 更新驱动 PID 参数 ，索引 0-3 分别对应左前，右前，左后，右后
     wheel_pids_[0].setGains(config.front_left_wheel_p, config.front_left_wheel_i, 
       config.front_left_wheel_d, config.front_left_wheel_i_max, config.front_left_wheel_i_min);
-    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.2f", 
-             config.front_left_wheel_p,
-             config.front_left_wheel_i,
-             config.front_left_wheel_d);  
+    
     wheel_pids_[1].setGains(config.front_right_wheel_p, config.front_right_wheel_i, 
       config.front_right_wheel_d, config.front_right_wheel_i_max, config.front_right_wheel_i_min);
 
@@ -92,18 +104,24 @@ namespace sentry_chassis_controller {
     
     pivot_pids_[3].setGains(config.back_right_pivot_p, config.back_right_pivot_i, 
       config.back_right_pivot_d, config.back_right_pivot_i_max, config.back_right_pivot_i_min);
+    
+    target_ = config.target;
+    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.4f target:%.2f", 
+             config.front_left_wheel_p,
+             config.front_left_wheel_i,
+             config.front_left_wheel_d,
+             config.target);    
   }
 
   
 
   /*参数加载函数，从yaml文件获取参数*/
   void SentryChassisController::controller_param_load(ros::NodeHandle &controller_nh) {
-    //从参数服务器获取车轮间距和轴距参数
+    //从参数服务器获取车轮间距、轴距参数、轮子半径参数
     wheel_track_ = controller_nh.param("wheel_track", 0.362);
     wheel_base_ = controller_nh.param("wheel_base", 0.362);
-    //从参数服务器获取最大车轮速度和最大转向速度参数
-    max_wheel_speed_ = controller_nh.param("max_wheel_speed", 10.0);
-    max_pivot_speed_ = controller_nh.param("max_pivot_speed", 5.0);
+    wheel_radius_ = controller_nh.param("wheel_radius", 0.055);
+
     /*从参数服务器获取八组PID参数*/  
     //加载轮速pid参数 
     for (size_t j = 0; j < 4; j++){
