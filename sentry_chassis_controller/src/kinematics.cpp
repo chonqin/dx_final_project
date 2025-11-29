@@ -2,13 +2,13 @@
 
 namespace sentry_chassis_controller {
     /*
-        Kinematics::Inverse_solution
+        Inverse_solution
         逆运动学：将底盘的速度转化为轮速和转向角度
         输入： 底盘整体线速度vx, vy和角速度omega
         输出： 四个轮子的速度wheel_speed和转向角度steering_angle
     */
     /*
-        Kinematics::forward_solution：
+        forward_solution：
         正运动学：将轮速和转向角度转化为底盘的速度
         输入： 四个轮子的速度wheel_speed和转向角度steering_angle
         输出： 底盘线速度vx, vy和角速度omega
@@ -45,6 +45,7 @@ namespace sentry_chassis_controller {
                             const std::array<double, 4> &steering_angle,
                             double wheel_base_, double wheel_track_ , double wheel_radius_,
                             double &vx, double &vy, double &omega) {
+
         // 计算每个轮子的线速度在车体坐标系下的分量
         std::array<double, 4> wx;
         std::array<double, 4> wy;
@@ -64,6 +65,5 @@ namespace sentry_chassis_controller {
         omega = (-wx[0]-wx[1]+wx[2]+wx[3]+wy[0]-wy[1]-wy[2]+wy[3]) 
                 * a / R * wheel_radius_ / 4.0 ;
     }                
-
 
 }

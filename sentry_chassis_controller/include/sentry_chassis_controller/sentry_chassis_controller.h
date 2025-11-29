@@ -15,7 +15,7 @@
 /*自定义头文件依赖*/
 #include "sentry_chassis_controller/kinematics.h"
 #include "sentry_chassis_controller/test_pid.h"
-
+#include "sentry_chassis_controller/odometry.h"
 
 namespace sentry_chassis_controller {
     // 定义SentryChassisController类,继承自controller_interface::Controller模板类
@@ -61,6 +61,8 @@ namespace sentry_chassis_controller {
             std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
             // 接收cmd_vel话题回调对象
             ros::Subscriber cmd_vel_sub;
+            // 里程计发布器
+            std::unique_ptr<Odometry> odometry_;
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);

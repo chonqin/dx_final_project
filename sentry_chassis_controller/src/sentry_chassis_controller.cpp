@@ -40,7 +40,8 @@ namespace sentry_chassis_controller {
     // 订阅cmd_vel话题
     cmd_vel_sub = controller_nh.subscribe<geometry_msgs::Twist>(
       "/cmd_vel", 1, &SentryChassisController::vel_callback, this);
-
+    // 发布里程计话题 
+    odometry_ = std::make_unique<Odometry>(controller_nh, wheel_base_, wheel_track_, wheel_radius_);
     ROS_INFO("参数加载成功！等待键盘输入测试模式...");
     return true;
 
@@ -48,6 +49,8 @@ namespace sentry_chassis_controller {
   
   /*ros_control update函数*/
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
+      
+      odometry_->update(time, period, pivot_joints_, wheel_joints_);
       
       switch (test_mode_){
       case 1:// 测试转向轮pid
@@ -60,6 +63,15 @@ namespace sentry_chassis_controller {
         // 测试逆运动学
         test_inverse(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_,
                                     wheel_speed, steering_angle);
+      case 4 :
+        // 测试正运动学
+        wheel_speed = {1.0, 1.0, 1.0, 1.0};
+        steering_angle = {0.0, 0.0, 0.0, 0.0};
+        forward_solution(wheel_speed, steering_angle, 
+                        wheel_radius_, wheel_base_, 
+                        wheel_track_, vx, vy, omega);
+        ROS_INFO("正运动学解算结果: vx=%.2f, vy=%.2f, omega=%.2f ", vx, vy, omega);
+        break;                              
       }
   }
   
