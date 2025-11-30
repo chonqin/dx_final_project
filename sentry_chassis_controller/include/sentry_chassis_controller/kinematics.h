@@ -5,6 +5,7 @@
 #include <array>
 #include <cmath>
 #include <ros/ros.h>
+#include <hardware_interface/joint_command_interface.h>
 namespace sentry_chassis_controller {
     /*
             Inverse_solutio

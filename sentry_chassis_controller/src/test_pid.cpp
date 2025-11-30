@@ -9,6 +9,46 @@
         ...
 */
 namespace sentry_chassis_controller {
+    void pid_control(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
+                        std::array<hardware_interface::JointHandle, 4>& pivot_joints,
+                        std::array<double, 4> &wheel_speed,
+                        std::array<double, 4> &steering_angle,
+                        std::array<control_toolbox::Pid, 4>& wheel_pids,
+                        std::array<control_toolbox::Pid, 4>& pivot_pids,
+                        std::array<ros::Publisher, 4>& wheel_target_pub,
+                        std::array<ros::Publisher, 4>& wheel_actual_pub,
+                        std::array<ros::Publisher, 4>& pivot_target_pub,
+                        std::array<ros::Publisher, 4>& pivot_actual_pub,
+                        const ros::Duration& period){
+
+        std_msgs::Float64 msg;
+        for (size_t i = 0; i < 4; i++) {
+            // pid 控制驱动轮速度
+            double current_velocity = wheel_joints[i].getVelocity();
+            double error = wheel_speed[i] - current_velocity;
+            double output = wheel_pids[i].computeCommand(error, period);
+            wheel_joints[i].setCommand(output);
+            // 发布目标速度和实际速度
+            msg.data = wheel_speed[i];
+            wheel_target_pub[i].publish(msg);
+
+            msg.data = current_velocity;
+            wheel_actual_pub[i].publish(msg);
+        }                    
+        for( size_t i = 0; i < 4; i++) {
+            // pid 控制转向舵轮
+            double current_positon = pivot_joints[i].getPosition();
+            double error = steering_angle[i] - current_positon;
+            double output = pivot_pids[i].computeCommand(error, period);
+            pivot_joints[i].setCommand(output);
+            // 发布目标速度和实际速度
+            msg.data = steering_angle[i];
+            pivot_target_pub[i].publish(msg); 
+
+            msg.data = current_positon;
+            pivot_actual_pub[i].publish(msg);
+        }
+    }
     /*
         测试四个驱动轮子pid
         输入:四个轮子的关节句柄数组，四个轮子的pid数组，

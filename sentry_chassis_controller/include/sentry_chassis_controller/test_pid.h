@@ -24,7 +24,17 @@ namespace sentry_chassis_controller {
                          std::array<ros::Publisher, 4>& pivot_target_pub,
                          std::array<ros::Publisher, 4>& pivot_actual_pub,
                          double target_,
-                         const ros::Duration& period);    
+                         const ros::Duration& period);
+    void pid_control(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
+                        std::array<hardware_interface::JointHandle, 4>& pivot_joints,
+                        std::array<double, 4> &wheel_speed,
+                        std::array<double, 4> &steering_angle,
+                        std::array<control_toolbox::Pid, 4>& wheel_pids,
+                        std::array<control_toolbox::Pid, 4>& pivot_pids,
+                        std::array<ros::Publisher, 4>& wheel_target_pub,
+                        std::array<ros::Publisher, 4>& wheel_actual_pub,
+                        std::array<ros::Publisher, 4>& pivot_target_pub,
+                        std::array<ros::Publisher, 4>& pivot_actual_pub,
+                        const ros::Duration& period);                   
 }
-
 #endif // SENTRY_CHASSIS_CONTROLLER_TEST_FUNCTION_H

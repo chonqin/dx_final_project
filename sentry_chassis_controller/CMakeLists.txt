@@ -9,7 +9,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   geometry_msgs
-  tf2_ros
+  tf
   nav_msgs
   dynamic_reconfigure
 )
@@ -25,12 +25,11 @@ include_directories(
   include
   ${catkin_INCLUDE_DIRS}
 )
-
-# --- 主控制器插件库 ---
 add_library(${PROJECT_NAME}
   src/sentry_chassis_controller.cpp
   src/kinematics.cpp
   src/test_pid.cpp
+  src/odometry.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
