@@ -33,7 +33,8 @@ namespace sentry_chassis_controller {
     dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>::CallbackType f =
     boost::bind(&SentryChassisController::dynamicReconfigureCallback, this, _1, _2);
     dynamic_server->setCallback(f);
-    
+    // 初始化tf监听器
+    tf_listener_ = std::make_unique<tf::TransformListener>();
     // 订阅测试模式话题  
     test_mode_sub_ = controller_nh.subscribe<std_msgs::Int32>(
         "/test_mode", 1, &SentryChassisController::testmode_callback, this);
@@ -63,10 +64,11 @@ namespace sentry_chassis_controller {
         // 测试逆运动学
         test_inverse(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_,
                                     wheel_speed, steering_angle);
+        break;                            
       case 4 :
         // 测试正运动学
-        wheel_speed = {1.0, 1.0, 1.0, 1.0};
-        steering_angle = {0.0, 0.0, 0.0, 0.0};
+        wheel_speed = {16.61, 16.61, 16.61, 16.61};
+        steering_angle = {1.47, 1.47, 1.47, 1.47};
         forward_solution(wheel_speed, steering_angle, 
                         wheel_radius_, wheel_base_, 
                         wheel_track_, vx, vy, omega);
@@ -77,11 +79,28 @@ namespace sentry_chassis_controller {
   
   /*接收cmd_vel话题回调函数*/
   void SentryChassisController::vel_callback(const geometry_msgs::Twist::ConstPtr& msg){
-    // 回调函数只负责接收cmd_vel话题消息并提取
-    double vx = msg->linear.x;
-    double vy = msg->linear.y;
-    double omega = msg->angular.z;
-    ROS_INFO("接收到cmd_vel指令:vx=%.2f, vy=%.2f, omega=%.2f ", vx, vy, omega);
+    // 先接收速度并存储在received_vel中
+    geometry_msgs::Twist received_vel = *msg;
+    ROS_INFO("收到原始cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
+             received_vel.linear.x, received_vel.linear.y, received_vel.angular.z);
+    if(coordinate_system == "global"){
+      // 如果选择全局坐标系，则进行坐标变换
+      geometry_msgs::Twist local_vel;
+      tf_global_to_local(received_vel, local_vel);
+      vx = local_vel.linear.x;
+      vy = local_vel.linear.y;
+      omega = local_vel.angular.z;
+      ROS_INFO("转换到底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
+               vx, vy, omega);
+    } 
+    else if(coordinate_system == "local"){
+      // 否则直接使用接收到的速度
+      vx = received_vel.linear.x;
+      vy = received_vel.linear.y;
+      omega = received_vel.angular.z;
+      ROS_INFO("使用底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
+               vx, vy, omega);
+    }         
   }
 
   /*测试模式回调函数*/
@@ -89,6 +108,7 @@ namespace sentry_chassis_controller {
     test_mode_ = msg->data;
     ROS_INFO("测试模式已切换为: %d", test_mode_);
   }
+  /*动态参数更改回调函数*/
   void SentryChassisController::dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level) {
     ROS_INFO("Dynamic reconfigure 更新PID参数");
     
@@ -125,15 +145,45 @@ namespace sentry_chassis_controller {
              config.target);    
   }
 
-  
-
+  /*tf坐标变化函数：将全局坐标系速度变换到底盘坐标系 */
+  bool SentryChassisController::tf_global_to_local(const geometry_msgs::Twist& global_vel, 
+                                                  geometry_msgs::Twist& local_vel){
+    
+    tf_listener_->waitForTransform("odom", "base_link", ros::Time(0), ros::Duration(0.1));
+      
+    tf::StampedTransform transform;
+    tf_listener_->lookupTransform("odom", "base_link", ros::Time(0), transform);
+      
+    // 获取旋转矩阵（从odom到base_link的旋转）
+    tf::Matrix3x3 rotation_matrix(transform.getRotation());
+      
+    // 提取全局速度向量
+    tf::Vector3 global_linear(global_vel.linear.x, global_vel.linear.y, 0);
+      
+    // 将全局线速度变换到底盘坐标系
+    // 注意：速度变换只需要旋转部分，使用逆矩阵（转置）
+    tf::Vector3 local_linear = rotation_matrix.transpose() * global_linear;
+      
+    // 角速度在两坐标系中相同（绕z轴）
+    double local_omega = global_vel.angular.z;
+      
+    // 填充输出的局部速度
+    local_vel.linear.x = local_linear.getX();
+    local_vel.linear.y = local_linear.getY();
+    local_vel.linear.z = 0;
+    local_vel.angular.x = 0;
+    local_vel.angular.y = 0;
+    local_vel.angular.z = local_omega;
+    return true;
+  }  
   /*参数加载函数，从yaml文件获取参数*/
   void SentryChassisController::controller_param_load(ros::NodeHandle &controller_nh) {
     //从参数服务器获取车轮间距、轴距参数、轮子半径参数
     wheel_track_ = controller_nh.param("wheel_track", 0.362);
     wheel_base_ = controller_nh.param("wheel_base", 0.362);
     wheel_radius_ = controller_nh.param("wheel_radius", 0.055);
-
+    coordinate_system = controller_nh.param("coordinate_system", std::string("global"));
+    ROS_INFO("坐标系模式: %s", coordinate_system.c_str());
     /*从参数服务器获取八组PID参数*/  
     //加载轮速pid参数 
     for (size_t j = 0; j < 4; j++){

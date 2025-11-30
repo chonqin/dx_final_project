@@ -5,7 +5,8 @@ sentry_chassis_controller:
   wheel_track: 0.362
   wheel_base: 0.362
   wheel_radius: 0.055
-
+  # 坐标系选择: global->全局坐标系, local->底盘坐标系
+  coordinate_system: global
   # PID 参数
   pid:
     front_left_wheel:

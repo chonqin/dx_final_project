@@ -20,13 +20,13 @@ namespace sentry_chassis_controller {
         // 计算解算所需投影点到车体中心的距离参数
         const double L = wheel_base_/2.0;
         const double W = wheel_track_/2.0;
-        const double R = std::sqrt(L*L + W*W);
+        const double r = std::sqrt(L*L + W*W)/2.0;
         const double a = std::sqrt(2) / 2.0 ;
         // 计算每个轮子的驱动速度和转向角度                              
         for(size_t i = 0; i < 4; i++) {
-            wheel_speed[i] = std::sqrt(std::pow(vx - a* omega * R, 2) +
-                                    std::pow(vy + a* omega * R, 2)) / wheel_radius_;
-            steering_angle[i] = std::atan2(vx - a* omega * R, vy + a* omega * R);                         
+            wheel_speed[i] = std::sqrt(std::pow(vx - a* omega * r, 2) +
+                                    std::pow(vy + a* omega * r, 2)) / wheel_radius_;
+            steering_angle[i] = std::atan2(vx - a* omega * r, vy + a* omega * r);                         
         }
     }
     void test_inverse(double vx, double vy, double omega,double wheel_base_, 
@@ -56,8 +56,8 @@ namespace sentry_chassis_controller {
         const double a = std::sqrt(2) / 2.0 ;
 
         for(size_t i = 0;i < 4 ; i++){
-            wx[i] = wheel_speed[i] * wheel_radius_ * std::sin(steering_angle[i]);
-            wy[i] = wheel_speed[i] * wheel_radius_ * std::cos(steering_angle[i]);
+            wx[i] = wheel_speed[i] *  std::sin(steering_angle[i]);
+            wy[i] = wheel_speed[i] *  std::cos(steering_angle[i]);
         }
         // 计算车体的线速度和角速度
         vx = (wx[0] + wx[1] + wx[2] + wx[3]) * wheel_radius_ / 4.0 ;
