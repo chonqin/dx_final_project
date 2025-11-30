@@ -50,10 +50,12 @@ namespace sentry_chassis_controller {
   
   /*ros_control update函数*/
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
-      
+      // 里程计实时更新
       odometry_->update(time, period, pivot_joints_, wheel_joints_);
       
       switch (test_mode_){
+      case 0:// 
+        break;
       case 1:// 测试转向轮pid
         test_pivots_pid(pivot_joints_,pivot_pids_, pivot_target_pub, pivot_actual_pub,target_, period);
         break;
@@ -64,16 +66,20 @@ namespace sentry_chassis_controller {
         // 测试逆运动学
         test_inverse(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_,
                                     wheel_speed, steering_angle);
+        pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
+          pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;                            
       case 4 :
-        // 测试正运动学
-        wheel_speed = {16.61, 16.61, 16.61, 16.61};
-        steering_angle = {1.47, 1.47, 1.47, 1.47};
+        // 测试正运动学，下面给出一段轮速和转向角度，计算得到底盘速度为 x=0.0,y=0.0,omega=0.5
+        wheel_speed = {2.33, 2.33, 2.33, 2.33};
+        steering_angle = {2.36, 0.79, -2.36, -0.79};
         forward_solution(wheel_speed, steering_angle, 
-                        wheel_radius_, wheel_base_, 
-                        wheel_track_, vx, vy, omega);
+                        wheel_base_, wheel_track_, 
+                        wheel_radius_, vx, vy, omega);
         ROS_INFO("正运动学解算结果: vx=%.2f, vy=%.2f, omega=%.2f ", vx, vy, omega);
-        break;                              
+        break;
+      case 5:
+        break;                                
       }
   }
   

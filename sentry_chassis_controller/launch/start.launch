@@ -15,6 +15,6 @@
 
   <!--  启动键盘输入节点 , 在一个新的终端窗口中显示-->
   <node name="choose_testmode" pkg="sentry_chassis_controller" type="choose_testmode_node" 
-  output="screen" launch-prefix="gnome-terminal --"/>
+  output="screen" />
 
 </launch>
