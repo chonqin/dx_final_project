@@ -66,6 +66,9 @@ namespace sentry_chassis_controller {
             std::unique_ptr<Odometry> odometry_;
             // tf监听器指针
             std::unique_ptr<tf::TransformListener> tf_listener_ ;
+            // 时间戳变量和超时时间设置
+            ros::Time last_cmd_vel_time_ ;
+            double cmd_vel_timeout_ = 0.3; // 默认0.3秒无指令则停止
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);
