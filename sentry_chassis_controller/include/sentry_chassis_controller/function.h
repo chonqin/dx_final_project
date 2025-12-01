@@ -1,5 +1,5 @@
-#ifndef SENTRY_CHASSIS_CONTROLLER_TEST_PID_H
-#define SENTRY_CHASSIS_CONTROLLER_TEST_PID_H
+#ifndef SENTRY_CHASSIS_CONTROLLER_FUNCTION_H
+#define SENTRY_CHASSIS_CONTROLLER_FUNCTION_H
 /*
     此文件包含了测试各个功能的函数声明
 */
@@ -25,6 +25,7 @@ namespace sentry_chassis_controller {
                          std::array<ros::Publisher, 4>& pivot_actual_pub,
                          double target_,
                          const ros::Duration& period);
+    /*四轮四舵整体pid控制函数*/                     
     void pid_control(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
                         std::array<hardware_interface::JointHandle, 4>& pivot_joints,
                         std::array<double, 4> &wheel_speed,
@@ -37,4 +38,4 @@ namespace sentry_chassis_controller {
                         std::array<ros::Publisher, 4>& pivot_actual_pub,
                         const ros::Duration& period);                   
 }
-#endif // SENTRY_CHASSIS_CONTROLLER_TEST_FUNCTION_H
+#endif // SENTRY_CHASSIS_CONTROLLER_FUNCTION_H

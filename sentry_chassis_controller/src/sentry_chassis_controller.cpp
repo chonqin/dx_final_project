@@ -54,16 +54,20 @@ namespace sentry_chassis_controller {
       odometry_->update(time, period, pivot_joints_, wheel_joints_);
       
       switch (test_mode_){
-      case 0:// 
+      case 0://
+        ROS_INFO_ONCE("暂停模式"); 
         break;
       case 1:// 测试转向轮pid
+        ROS_INFO_ONCE("测试转向轮pid");
         test_pivots_pid(pivot_joints_,pivot_pids_, pivot_target_pub, pivot_actual_pub,target_, period);
         break;
       case 2:// 测试轮速pid
+        ROS_INFO_ONCE("测试驱动轮pid");
         test_wheels_pid(wheel_joints_,wheel_pids_, wheel_target_pub, wheel_actual_pub, target_, period);
         break;
       case 3:
-        // 测试逆运动学
+        // 测试逆运动学,先在终端给出速度指令，然后解算轮速和转向角度，最后进行pid控制
+        ROS_INFO_ONCE("测试逆运动学函数，计算轮速和转向角度");
         test_inverse(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_,
                                     wheel_speed, steering_angle);
         pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
@@ -71,6 +75,7 @@ namespace sentry_chassis_controller {
         break;                            
       case 4 :
         // 测试正运动学，下面给出一段轮速和转向角度，计算得到底盘速度为 x=0.0,y=0.0,omega=0.5
+        ROS_INFO_ONCE("测试正运动学函数,计算底盘速度vx, vy, omega");
         wheel_speed = {2.33, 2.33, 2.33, 2.33};
         steering_angle = {2.36, 0.79, -2.36, -0.79};
         forward_solution(wheel_speed, steering_angle, 
@@ -78,8 +83,26 @@ namespace sentry_chassis_controller {
                         wheel_radius_, vx, vy, omega);
         ROS_INFO("正运动学解算结果: vx=%.2f, vy=%.2f, omega=%.2f ", vx, vy, omega);
         break;
-      case 5:
-        break;                                
+      case 5: // 实现小陀螺模式,车子原地旋转
+        ROS_INFO_ONCE("小陀螺模式启动，车子原地旋转");
+        wheel_speed = {8.33, 8.33, 8.33, 8.33};// 轮速随意设定
+        steering_angle = {2.36, 0.79, -2.36, -0.79};// 转向角度设定为逆时针旋转
+        pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
+          pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
+        break;
+      case 6: // 实现自锁模式,车子无法移动
+        ROS_INFO_ONCE("自锁模式启动，车子无法移动");
+        wheel_speed = {0.0, 0.0, 0.0, 0.0};
+        steering_angle = {-M_PI / 4.0,M_PI / 4.0, M_PI / 4.0, -M_PI / 4.0};
+        pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
+          pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
+        break;
+      case 7: // 键盘控制模式
+        ROS_INFO_ONCE("开启键盘控制模式，请使用键盘控制底盘运动");
+        Inverse_solution(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_, wheel_speed, steering_angle);
+        pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
+          pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
+        break;            
       }
   }
   

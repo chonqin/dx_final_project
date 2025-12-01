@@ -28,8 +28,9 @@ include_directories(
 add_library(${PROJECT_NAME}
   src/sentry_chassis_controller.cpp
   src/kinematics.cpp
-  src/test_pid.cpp
+  src/function.cpp
   src/odometry.cpp
+  src/keyboard_control.cpp
 )
 target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
@@ -38,3 +39,6 @@ target_link_libraries(${PROJECT_NAME}
 # --- 键盘监听节点 ---
 add_executable(choose_testmode_node src/choose_testmode.cpp)
 target_link_libraries(choose_testmode_node ${catkin_LIBRARIES})
+# --- 键盘控制节点 ---
+add_executable(keyboard_control_node src/keyboard_control.cpp)
+target_link_libraries(keyboard_control_node ${catkin_LIBRARIES})
