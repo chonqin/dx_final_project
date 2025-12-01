@@ -25,13 +25,13 @@ int getch() {
     // 应用修改后的属性
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
     // 设置文件描述符为非阻塞模式 O_NONBLOCK为非阻塞标志
-    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+    // oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    // fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
     // 读取一个字符
     ch = getchar();
     // 恢复终端属性和文件描述符状态
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    fcntl(STDIN_FILENO, F_SETFL, oldf);
+    // fcntl(STDIN_FILENO, F_SETFL, oldf);
     // 如果读取到字符则返回该字符，否则返回-1
     if(ch != EOF)
     {
@@ -144,9 +144,9 @@ int main(int argc, char** argv) {
         cmd_vel_pub.publish(twist);
 
         // 减速逻辑：如果不持续按键，则速度逐渐归零
-        current_linear_x *= 0.8;
-        current_linear_y *= 0.8;
-        current_angular_z *= 0.8;
+        //current_linear_x *= 0.8;
+        //current_linear_y *= 0.8;
+        //current_angular_z *= 0.8;
 
         ros::spinOnce();
         ros::Duration(0.1).sleep(); // 10Hz

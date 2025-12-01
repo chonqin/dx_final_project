@@ -38,7 +38,7 @@ namespace sentry_chassis_controller {
 
         private:
             double wheel_base_, wheel_track_ , wheel_radius_;// 车轮间距和轴距
-            std::string coordinate_system;//坐标系选择
+            int coordinate_system;//坐标系选择,1为全局坐标系，0为底盘坐标系
             //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
             int test_mode_ = 0 ;
             double target_ = 10.0; // 目标，用于测试pid参数效果
@@ -62,6 +62,9 @@ namespace sentry_chassis_controller {
             std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
             // 接收cmd_vel话题回调对象
             ros::Subscriber cmd_vel_sub;
+            // 速度命令超时机制
+            ros::Time last_cmd_vel_time_;
+            double cmd_vel_timeout_ = 0.5; // 超时时间，单位秒
             // 里程计发布器
             std::unique_ptr<Odometry> odometry_;
             // tf监听器指针

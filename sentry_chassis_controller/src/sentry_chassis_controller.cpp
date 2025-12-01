@@ -41,6 +41,8 @@ namespace sentry_chassis_controller {
     // 订阅cmd_vel话题
     cmd_vel_sub = controller_nh.subscribe<geometry_msgs::Twist>(
       "/cmd_vel", 1, &SentryChassisController::vel_callback, this);
+    // 初始化速度命令时间戳
+    last_cmd_vel_time_ = ros::Time::now();
     // 发布里程计话题 
     odometry_ = std::make_unique<Odometry>(controller_nh, wheel_base_, wheel_track_, wheel_radius_);
     ROS_INFO("初始化成功!默认模式为0...等待键盘输入测试模式...");
@@ -50,12 +52,20 @@ namespace sentry_chassis_controller {
   
   /*ros_control update函数*/
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
+      // 检查速度命令是否超时，如果超时则将速度置0
+      if ((time - last_cmd_vel_time_).toSec() > cmd_vel_timeout_) {
+        vx = 0.0;
+        vy = 0.0;
+        omega = 0.0;
+      }
+      
       // 里程计实时更新
       odometry_->update(time, period, pivot_joints_, wheel_joints_);
       
       switch (test_mode_){
       case 0:{// 正常模式,没有接受速度指令时车子自锁
         ROS_INFO_ONCE("正常模式");
+        break;
       }
       case 1:{// 测试转向轮pid
         ROS_INFO_ONCE("测试转向轮pid");
@@ -100,23 +110,26 @@ namespace sentry_chassis_controller {
         pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
-        }
+      }
       case 7: {// 键盘控制模式
         ROS_INFO_ONCE("开启键盘控制模式，请使用键盘控制底盘运动");
         Inverse_solution(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_, wheel_speed, steering_angle);
         pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
-        }
       }
-    }
-  }  /*接收cmd_vel话题回调函数*/
+      }
+  }
+  /*接收cmd_vel话题回调函数*/
   void SentryChassisController::vel_callback(const geometry_msgs::Twist::ConstPtr& msg){
+    // 更新最后一次收到命令的时间戳
+    last_cmd_vel_time_ = ros::Time::now();
+    
     // 先接收速度并存储在received_vel中
     geometry_msgs::Twist received_vel = *msg;
     ROS_INFO("收到原始cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
              received_vel.linear.x, received_vel.linear.y, received_vel.angular.z);
-    if(coordinate_system == "global"){
+    if(!coordinate_system ){
       // 如果选择全局坐标系，则进行坐标变换
       geometry_msgs::Twist local_vel;
       tf_global_to_local(received_vel, local_vel);
@@ -126,7 +139,7 @@ namespace sentry_chassis_controller {
       ROS_INFO("转换到底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
                vx, vy, omega);
     } 
-    else if(coordinate_system == "local"){
+    else if(coordinate_system){
       // 否则直接使用接收到的速度
       vx = received_vel.linear.x;
       vy = received_vel.linear.y;
@@ -135,7 +148,6 @@ namespace sentry_chassis_controller {
                vx, vy, omega);
     }         
   }
-
   /*测试模式回调函数*/
   void SentryChassisController::testmode_callback(const std_msgs::Int32::ConstPtr& msg){
     test_mode_ = msg->data;
@@ -215,8 +227,8 @@ namespace sentry_chassis_controller {
     wheel_track_ = controller_nh.param("wheel_track", 0.362);
     wheel_base_ = controller_nh.param("wheel_base", 0.362);
     wheel_radius_ = controller_nh.param("wheel_radius", 0.055);
-    coordinate_system = controller_nh.param("coordinate_system", std::string("global"));
-    ROS_INFO("坐标系模式: %s", coordinate_system.c_str());
+    coordinate_system = controller_nh.param("coordinate_system", 0);
+    ROS_INFO("坐标系模式: %d", coordinate_system);
     /*从参数服务器获取八组PID参数*/  
     //加载轮速pid参数 
     for (size_t j = 0; j < 4; j++){
