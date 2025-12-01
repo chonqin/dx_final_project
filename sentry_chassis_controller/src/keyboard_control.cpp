@@ -13,22 +13,26 @@ double current_angular_z = 0;
 
 // 函数：获取键盘按键，非阻塞
 int getch() {
+    // 定义termios结构体变量，用于保存和修改终端属性
     struct termios oldt, newt;
     int ch;
     int oldf;
-
+    // 获取当前终端属性并保存到oldt, 用于后续恢复
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
+    // 修改终端属性，使其不等待换行且不回显输入字符
     newt.c_lflag &= ~(ICANON | ECHO);
+    // 应用修改后的属性
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    // 设置文件描述符为非阻塞模式 O_NONBLOCK为非阻塞标志
     oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
     fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-
+    // 读取一个字符
     ch = getchar();
-
+    // 恢复终端属性和文件描述符状态
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     fcntl(STDIN_FILENO, F_SETFL, oldf);
-
+    // 如果读取到字符则返回该字符，否则返回-1
     if(ch != EOF)
     {
         return ch;

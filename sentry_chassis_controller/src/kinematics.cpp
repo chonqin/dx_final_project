@@ -39,6 +39,9 @@ namespace sentry_chassis_controller {
             // 计算转向角（使用atan2(vy, vx)定义）
             steering_angle[i] = std::atan2(vy_wheel, vx_wheel);
         }
+        ROS_INFO_ONCE("解算结果为：轮速(%.2f, %.2f, %.2f, %.2f), 转向角度(%.2f, %.2f, %.2f, %.2f)",
+                      wheel_speed[0], wheel_speed[1], wheel_speed[2], wheel_speed[3],
+                      steering_angle[0], steering_angle[1], steering_angle[2], steering_angle[3]);
     }
     void forward_solution(const std::array<double, 4> &wheel_speed,
                         const std::array<double, 4> &steering_angle,
@@ -77,5 +80,7 @@ namespace sentry_chassis_controller {
         omega_sum += (vy_wheel[3] - vy) / wheel_pos_x[3]; // 右后
     
         omega = omega_sum / 4.0;
+
+        ROS_INFO_ONCE("正运动学解算结果：底盘速度vx=%.2f, vy=%.2f, omega=%.2f ", vx, vy, omega);
     }
 }

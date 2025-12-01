@@ -43,8 +43,6 @@ namespace sentry_chassis_controller {
       "/cmd_vel", 1, &SentryChassisController::vel_callback, this);
     // 发布里程计话题 
     odometry_ = std::make_unique<Odometry>(controller_nh, wheel_base_, wheel_track_, wheel_radius_);
-    // 初始化最后一次接收速度指令的时间戳
-    last_cmd_vel_time_ = ros::Time::now();
     ROS_INFO("初始化成功!默认模式为0...等待键盘输入测试模式...");
     return true;
 
@@ -58,17 +56,6 @@ namespace sentry_chassis_controller {
       switch (test_mode_){
       case 0:{// 正常模式,没有接受速度指令时车子自锁
         ROS_INFO_ONCE("正常模式");
-        if((time - last_cmd_vel_time_) > ros::Duration(cmd_vel_timeout_)){
-          // 超过超时时间没有收到速度指令，车子自锁
-          wheel_speed = {0.0, 0.0, 0.0, 0.0};
-          steering_angle = {-M_PI / 4.0,M_PI / 4.0, M_PI / 4.0, -M_PI / 4.0};
-        }
-        else{
-          Inverse_solution(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_, wheel_speed, steering_angle);
-        }
-        pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
-          pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
-        break;
       }
       case 1:{// 测试转向轮pid
         ROS_INFO_ONCE("测试转向轮pid");
@@ -82,13 +69,13 @@ namespace sentry_chassis_controller {
       }
       case 3:{// 测试逆运动学,先在终端给出速度指令，然后解算轮速和转向角度，最后进行pid控制
         ROS_INFO_ONCE("测试逆运动学函数，计算轮速和转向角度");
-        test_inverse(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_,
+        Inverse_solution(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_,
                                     wheel_speed, steering_angle);
         pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
       }                            
-      case 4 :{// 测试正运动学，下面给出一段轮速和转向角度，计算得到底盘速度为 x=0.0,y=0.0,omega=0.5
+      case 4:{// 测试正运动学，下面给出一段轮速和转向角度，计算得到底盘速度为 x=0.0,y=0.0,omega=0.5
         ROS_INFO_ONCE("测试正运动学函数,计算底盘速度vx, vy, omega");
         wheel_speed = {2.33, 2.33, 2.33, 2.33};
         steering_angle = {2.36, 0.79, -2.36, -0.79};
@@ -113,20 +100,18 @@ namespace sentry_chassis_controller {
         pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
-      }
+        }
       case 7: {// 键盘控制模式
         ROS_INFO_ONCE("开启键盘控制模式，请使用键盘控制底盘运动");
         Inverse_solution(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_, wheel_speed, steering_angle);
         pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
-        break;            
+        break;
+        }
       }
-  }
-  
-  /*接收cmd_vel话题回调函数*/
+    }
+  }  /*接收cmd_vel话题回调函数*/
   void SentryChassisController::vel_callback(const geometry_msgs::Twist::ConstPtr& msg){
-    // 更新最后一次接收速度指令的时间戳
-    last_cmd_vel_time_ = ros::Time::now();
     // 先接收速度并存储在received_vel中
     geometry_msgs::Twist received_vel = *msg;
     ROS_INFO("收到原始cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
