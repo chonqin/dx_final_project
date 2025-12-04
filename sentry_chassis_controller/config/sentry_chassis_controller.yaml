@@ -5,6 +5,10 @@ sentry_chassis_controller:
   wheel_track: 0.362
   wheel_base: 0.362
   wheel_radius: 0.055
+  # 功率控制系数
+  vel_coeff: 0.6
+  effort_coeff: 0.4
+  power_offset: 5.0
   # 坐标系选择: 0->全局坐标系, 1->底盘坐标系
   coordinate_system: 0
   # PID 参数

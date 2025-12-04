@@ -36,6 +36,8 @@ namespace sentry_chassis_controller {
                         std::array<ros::Publisher, 4>& wheel_actual_pub,
                         std::array<ros::Publisher, 4>& pivot_target_pub,
                         std::array<ros::Publisher, 4>& pivot_actual_pub,
-                        const ros::Duration& period);                   
+                        const ros::Duration& period);
+    /*功率控制*/                      
+    void powerlimit();                 
 }
 #endif // SENTRY_CHASSIS_CONTROLLER_FUNCTION_H

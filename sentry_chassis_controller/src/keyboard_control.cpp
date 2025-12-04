@@ -4,6 +4,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h> //
+#include <sys/select.h>
 // 全局变量
 double linear_vel = 0.5;  // 默认线速度
 double angular_vel = 0.5; // 默认角速度
@@ -24,11 +25,19 @@ int getch() {
     newt.c_lflag &= ~(ICANON | ECHO);
     // 应用修改后的属性
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    // 设置文件描述符为非阻塞模式 O_NONBLOCK为非阻塞标志
-    // oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
-    // fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
-    // 读取一个字符
-    ch = getchar();
+    // 使用select进行非阻塞检查：如果没有可读字符则立即返回-1
+    fd_set readfds;
+    struct timeval tv;
+    FD_ZERO(&readfds);
+    FD_SET(STDIN_FILENO, &readfds);
+    tv.tv_sec = 0;
+    tv.tv_usec = 0; // 不等待
+    int rv = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &tv);
+    if (rv > 0 && FD_ISSET(STDIN_FILENO, &readfds)) {
+        ch = getchar();
+    } else {
+        ch = -1;
+    }
     // 恢复终端属性和文件描述符状态
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     // fcntl(STDIN_FILENO, F_SETFL, oldf);
@@ -65,13 +74,19 @@ int main(int argc, char** argv) {
     geometry_msgs::Twist twist;
 
     print_help();
+    // 按键活动标志：用于检测按键松开并只发送一次零速度
+    bool active = false;
+    bool zero_published = false;
 
     while (ros::ok()) {
-        // 获取键盘输入
+        // 获取键盘输入（非阻塞）
         int key = getch();
 
-        // 根据按键更新速度指令
         if (key != -1) {
+            // 有按键输入，标记为活动并允许再次发送速度
+            active = true;
+            zero_published = false;
+
             switch (key) {
                 case 'w':
                     current_linear_x = linear_vel;
@@ -127,29 +142,39 @@ int main(int argc, char** argv) {
                     print_help();
                     break;
                 default:
-                    // 其他按键，可以不处理
                     break;
             }
+
+            // 填充并发布速度（仅在有按键输入时持续发布）
+            twist.linear.x = current_linear_x;
+            twist.linear.y = current_linear_y;
+            twist.linear.z = 0;
+            twist.angular.x = 0;
+            twist.angular.y = 0;
+            twist.angular.z = current_angular_z;
+            cmd_vel_pub.publish(twist);
+        } else {
+            // 没有按键输入
+            if (active && !zero_published) {
+                // 刚刚从活动状态变为无按键：发送一次零速度以立即停车
+                current_linear_x = 0;
+                current_linear_y = 0;
+                current_angular_z = 0;
+                twist.linear.x = 0;
+                twist.linear.y = 0;
+                twist.linear.z = 0;
+                twist.angular.x = 0;
+                twist.angular.y = 0;
+                twist.angular.z = 0;
+                cmd_vel_pub.publish(twist);
+                zero_published = true;
+                active = false;
+            }
+            // 如果已经空闲并且零速度已发送，则不再发布任何消息
         }
 
-        // 填充Twist消息
-        twist.linear.x = current_linear_x;
-        twist.linear.y = current_linear_y;
-        twist.linear.z = 0;
-        twist.angular.x = 0;
-        twist.angular.y = 0;
-        twist.angular.z = current_angular_z;
-
-        // 发布消息
-        cmd_vel_pub.publish(twist);
-
-        // 减速逻辑：如果不持续按键，则速度逐渐归零
-        //current_linear_x *= 0.8;
-        //current_linear_y *= 0.8;
-        //current_angular_z *= 0.8;
-
         ros::spinOnce();
-        ros::Duration(0.1).sleep(); // 10Hz
+        ros::Duration(0.05).sleep(); // 20Hz loop，提高响应
     }
 
     return 0;
