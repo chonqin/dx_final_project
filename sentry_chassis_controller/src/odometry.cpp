@@ -26,8 +26,8 @@ namespace sentry_chassis_controller {
         }
         // 调用正运动学解算
         forward_solution(wheel_speed, steering_angle, 
-                        wheel_radius_, wheel_base_, 
-                        wheel_track_, vx, vy, omega);
+                        wheel_base_, wheel_track_, 
+                        wheel_radius_, vx, vy, omega);
         // 积分里程计                
         double dt = period.toSec();
         double delta_x = (vx  *std::cos(z_)  - vy * std::sin(z_)) * dt;

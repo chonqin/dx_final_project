@@ -8,7 +8,7 @@ sentry_chassis_controller:
   # 功率控制系数
   vel_coeff: 0.6
   effort_coeff: 0.4
-  power_offset: 5.0
+  power_offset: 0.0
   # 坐标系选择: 0->全局坐标系, 1->底盘坐标系
   coordinate_system: 0
   # PID 参数

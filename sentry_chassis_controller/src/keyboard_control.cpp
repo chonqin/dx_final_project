@@ -17,37 +17,42 @@ int getch() {
     // 定义termios结构体变量，用于保存和修改终端属性
     struct termios oldt, newt;
     int ch;
-    int oldf;
+    
     // 获取当前终端属性并保存到oldt, 用于后续恢复
     tcgetattr(STDIN_FILENO, &oldt);
     newt = oldt;
-    // 修改终端属性，使其不等待换行且不回显输入字符
-    newt.c_lflag &= ~(ICANON | ECHO);
-    // 应用修改后的属性
-    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
-    // 使用select进行非阻塞检查：如果没有可读字符则立即返回-1
+    
+    // 修改终端属性
+    // c_lflag: 禁用规范模式(ICANON)、禁用回显(ECHO)、禁用信号处理(ISIG)
+    newt.c_lflag &= ~(ICANON | ECHO | ISIG);
+    // c_cc: 设置最小字符数(VMIN=0表示非阻塞)和超时时间(VTIME=0)
+    newt.c_cc[VMIN] = 0;
+    newt.c_cc[VTIME] = 0;
+    // c_iflag: 禁用输入信号处理
+    newt.c_iflag &= ~(IXON | IXOFF);
+    
+    // 应用修改后的属性(TCSAFLUSH清空输入输出缓冲)
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &newt);
+    
+    // 使用select进行非阻塞检查
     fd_set readfds;
     struct timeval tv;
     FD_ZERO(&readfds);
     FD_SET(STDIN_FILENO, &readfds);
     tv.tv_sec = 0;
-    tv.tv_usec = 0; // 不等待
+    tv.tv_usec = 0;
+    
     int rv = select(STDIN_FILENO + 1, &readfds, NULL, NULL, &tv);
     if (rv > 0 && FD_ISSET(STDIN_FILENO, &readfds)) {
         ch = getchar();
     } else {
         ch = -1;
     }
-    // 恢复终端属性和文件描述符状态
-    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    // fcntl(STDIN_FILENO, F_SETFL, oldf);
-    // 如果读取到字符则返回该字符，否则返回-1
-    if(ch != EOF)
-    {
-        return ch;
-    }
-
-    return -1;
+    
+    // 恢复终端属性
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &oldt);
+    
+    return (ch != EOF) ? ch : -1;
 }
 
 // 函数：显示帮助信息

@@ -40,7 +40,7 @@ namespace sentry_chassis_controller {
         "/test_mode", 1, &SentryChassisController::testmode_callback, this);
     // 订阅cmd_vel话题
     cmd_vel_sub = controller_nh.subscribe<geometry_msgs::Twist>(
-      "/cmd_vel", 1, &SentryChassisController::vel_callback, this);
+      "/cmd_vel", 1, &SentryChassisController::cmdvel_callback, this);
     // 初始化速度命令时间戳
     last_cmd_vel_time_ = ros::Time::now();
     // 发布里程计话题 
@@ -52,10 +52,13 @@ namespace sentry_chassis_controller {
   
   /*ros_control update函数*/
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
+      odometry_->update(time, period, pivot_joints_, wheel_joints_);
+      
       // 从RealtimeBuffer读取最新的cmd_vel消息（实时线程安全读取）
       geometry_msgs::Twist* cmd_vel_ptr = cmd_vel_buffer_.readFromRT();
-      // 指针不为空则表示有新的速度命令
-      if (cmd_vel_ptr != nullptr) {
+      
+      // 只有在有新的速度命令时才进行处理
+      if (cmd_vel_ptr != nullptr && (time - last_cmd_vel_time_).toSec() < cmd_vel_timeout_) {
         //  接收到新的速度命令
         geometry_msgs::Twist received_vel = *cmd_vel_ptr;
         ROS_INFO("收到原始cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
@@ -81,15 +84,15 @@ namespace sentry_chassis_controller {
                    vx, vy, omega);
         }
       }
-      // 检查速度命令是否超时，如果超时则将速度置0
-      if ((time - last_cmd_vel_time_).toSec() > cmd_vel_timeout_) {
+      else {
+        // 速度命令超时或缓冲区为空：将速度置0
         vx = 0.0;
         vy = 0.0;
         omega = 0.0;
         ROS_DEBUG("速度命令超时,底盘速度为0");
       }   
       // 里程计实时更新
-      odometry_->update(time, period, pivot_joints_, wheel_joints_);
+      // odometry_->update(time, period, pivot_joints_, wheel_joints_);
       
       switch (test_mode_){
       case 0:{// 正常模式,没有接受速度指令时车子自锁
@@ -155,7 +158,11 @@ namespace sentry_chassis_controller {
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
       }
+      case 8: {
+        break;
       }
+      // powerlimit(wheel_joints_,pivot_joints_);
+    }
   }
   /*接收cmd_vel话题回调函数：只用作写入缓冲区*/
   void SentryChassisController::cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg){
@@ -224,8 +231,8 @@ namespace sentry_chassis_controller {
     tf::Vector3 global_linear(global_vel.linear.x, global_vel.linear.y, 0);
       
     // 将全局线速度变换到底盘坐标系
-    // 公式：v_local = R_odom_to_base * v_global （直接用矩阵，不用转置）
-    tf::Vector3 local_linear = R_odom_to_base * global_linear;
+    // 公式：v_local = R_odom_to_base^T * v_global （使用转置，将全局坐标变换到局部坐标）
+    tf::Vector3 local_linear = R_odom_to_base.transpose() * global_linear;
       
     // 角速度在两坐标系中相同（绕z轴）
     double local_omega = global_vel.angular.z;
@@ -298,13 +305,13 @@ namespace sentry_chassis_controller {
       c += std::pow(vel,2); // ω²
     }
     // P = effort_coeff * Σ(τ²) + vel_coeff * Σ(ω²) + power_offset_
-    // power_offset_ 为基础功率损耗，可以根据实际测定 
+    // power_offset_ 为基础功率损耗，可以根据实际测定,这里设置为0 
     a *= effort_coeff;
     c  = c * vel_coeff - power_limit - power_offset_;
 
     double k = 1.0; // 功率限制系数，初始为1.0（不限制）
     if(b!=0){ // 避免除零错误
-      k = (-b + std::sqrt(b*b - 4*a*c,0.0)) / (2*a);
+      k = (-b + std::sqrt(b*b - 4*a*c) )/ (2*a);
     }
     // 应用功率限制系数
     if(k < 1.0) {
