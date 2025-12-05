@@ -11,11 +11,14 @@ int main(int argc, char** argv) {
     ros::Publisher mode_pub = nh.advertise<std_msgs::Int32>("/test_mode", 1);
 
     std::cout << "键盘监听已启动，请输入数字选择测试模式并按回车：" << std::endl;
-    std::cout << "  0: 停止测试" << std::endl;
+    std::cout << "  0: 正常模式,开启键盘控制和pid控制" << std::endl;
     std::cout << "  1: 测试转向PID" << std::endl;
     std::cout << "  2: 测试驱动轮PID" << std::endl;
-    std::cout << "  3: 测试逆运动学" << std::endl;
-
+    std::cout << "  3: 测试逆运动学,在终端中给出cmd_vel" << std::endl;
+    std::cout << "  4: 测试正运动学" << std::endl;
+    std::cout << "  5: 测试小陀螺" << std::endl;
+    std::cout << "  6: 测试自锁" << std::endl;
+    std::cout << "  7: 测试键盘控制" << std::endl;
     ros::Rate rate(10); // 10 Hz
     while (ros::ok()) {
         //读取用户输入
@@ -37,6 +40,5 @@ int main(int argc, char** argv) {
         ros::spinOnce();
         rate.sleep();
     }
-
     return 0;
 }

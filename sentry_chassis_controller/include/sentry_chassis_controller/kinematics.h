@@ -22,12 +22,8 @@ namespace sentry_chassis_controller {
     void Inverse_solution(double vx, double vy, double omega,double wheel_base_, 
                             double wheel_track_ , double wheel_radius_,
                             std::array<double, 4> &wheel_speed,
-                            std::array<double, 4> &steering_angle) ;
-    /*逆运动学测试函数，用于update里调用测试*/    
-    void test_inverse(double vx, double vy, double omega,double wheel_base_, 
-                            double wheel_track_ , double wheel_radius_,
-                            std::array<double, 4> &wheel_speed,
-                            std::array<double, 4> &steering_angle);
+                            std::array<double, 4> &steering_angle,
+                            const std::array<double, 4> &current_steering_angle) ;
 
     void forward_solution(const std::array<double, 4> &wheel_speed,
                         const std::array<double, 4> &steering_angle,

@@ -13,8 +13,11 @@
   type="spawner" args="sentry_chassis_controller joint_state_controller" 
   output="screen" respawn="false"/>
 
-  <!--  启动键盘输入节点 , 在一个新的终端窗口中显示-->
+  <!--  启动键盘输入节点 -->
   <node name="choose_testmode" pkg="sentry_chassis_controller" type="choose_testmode_node" 
   output="screen" />
-
+  <!-- 启动键盘控制节点，在一个新的终端窗口中显示-->
+  <node name="keyboard_control" pkg="sentry_chassis_controller" type="keyboard_control_node" 
+  output="screen" launch-prefix="gnome-terminal -e"/>
+  
 </launch>

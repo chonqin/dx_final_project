@@ -13,9 +13,10 @@
 #include <sentry_chassis_controller/SentryChassisControllerConfig.h>
 #include <geometry_msgs/Twist.h>
 #include <tf/transform_listener.h>
+#include <realtime_tools/realtime_buffer.h>
 /*自定义头文件依赖*/
 #include "sentry_chassis_controller/kinematics.h"
-#include "sentry_chassis_controller/test_pid.h"
+#include "sentry_chassis_controller/function.h"
 #include "sentry_chassis_controller/odometry.h"
 
 namespace sentry_chassis_controller {
@@ -38,10 +39,11 @@ namespace sentry_chassis_controller {
 
         private:
             double wheel_base_, wheel_track_ , wheel_radius_;// 车轮间距和轴距
-            std::string coordinate_system;//坐标系选择
+            int coordinate_system;//坐标系选择,1为全局坐标系，0为底盘坐标系
             //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
             int test_mode_ = 0 ;
             double target_ = 10.0; // 目标，用于测试pid参数效果
+            double vel_coeff ,effort_coeff, power_offset_; // 功率计算系数,需要根据实际测定
             // 底盘运动学定义
             double vx , vy, omega; // 线速度和角速度
             // 存储四个驱动轮速度和转向轮转向角度
@@ -62,6 +64,11 @@ namespace sentry_chassis_controller {
             std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
             // 接收cmd_vel话题回调对象
             ros::Subscriber cmd_vel_sub;
+            // RealtimeBuffer用于存储cmd_vel命令
+            realtime_tools::RealtimeBuffer<geometry_msgs::Twist> cmd_vel_buffer_;
+            // 速度命令超时机制
+            ros::Time last_cmd_vel_time_;
+            double cmd_vel_timeout_ = 0.1; // 超时时间，单位秒
             // 里程计发布器
             std::unique_ptr<Odometry> odometry_;
             // tf监听器指针
@@ -70,8 +77,10 @@ namespace sentry_chassis_controller {
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);
             void dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level);
-            void vel_callback(const geometry_msgs::Twist::ConstPtr& msg);
+            void cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg);
             bool tf_global_to_local(const geometry_msgs::Twist& global_vel, geometry_msgs::Twist& local_vel);
+            void powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
+                            std::array<hardware_interface::JointHandle, 4>& pivot_joints);
     };
 }// namespace sentry_chassis_controller
 

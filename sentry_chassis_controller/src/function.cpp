@@ -1,4 +1,4 @@
-#include "sentry_chassis_controller/test_pid.h"
+#include "sentry_chassis_controller/function.h"
 /*
     此文件包含了测试pid功能的函数
     用于验证代码的正确性和功能实现
@@ -21,7 +21,22 @@ namespace sentry_chassis_controller {
                         std::array<ros::Publisher, 4>& pivot_actual_pub,
                         const ros::Duration& period){
 
-        std_msgs::Float64 msg;
+        std_msgs::Float64 msg;                   
+        for( size_t i = 0; i < 4; i++) {
+            // pid 控制转向舵轮 
+            double current_positon = pivot_joints[i].getPosition();
+            double target_angle = steering_angle[i];            
+            // 计算控制输出
+            double error = target_angle - current_positon;
+            double output = pivot_pids[i].computeCommand(error, period);
+            pivot_joints[i].setCommand(output);
+            // 发布目标角度和实际角度
+            msg.data = target_angle;
+            pivot_target_pub[i].publish(msg); 
+
+            msg.data = current_positon;
+            pivot_actual_pub[i].publish(msg);
+        }
         for (size_t i = 0; i < 4; i++) {
             // pid 控制驱动轮速度
             double current_velocity = wheel_joints[i].getVelocity();
@@ -34,20 +49,7 @@ namespace sentry_chassis_controller {
 
             msg.data = current_velocity;
             wheel_actual_pub[i].publish(msg);
-        }                    
-        for( size_t i = 0; i < 4; i++) {
-            // pid 控制转向舵轮
-            double current_positon = pivot_joints[i].getPosition();
-            double error = steering_angle[i] - current_positon;
-            double output = pivot_pids[i].computeCommand(error, period);
-            pivot_joints[i].setCommand(output);
-            // 发布目标速度和实际速度
-            msg.data = steering_angle[i];
-            pivot_target_pub[i].publish(msg); 
-
-            msg.data = current_positon;
-            pivot_actual_pub[i].publish(msg);
-        }
+        }  
     }
     /*
         测试四个驱动轮子pid
@@ -109,8 +111,7 @@ namespace sentry_chassis_controller {
             pivot_actual_pub[i].publish(msg);
         }                    
     }
-    
-    
+
 
 
 }
