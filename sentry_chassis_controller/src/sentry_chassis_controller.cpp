@@ -54,7 +54,7 @@ namespace sentry_chassis_controller {
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
       odometry_->update(time, period, pivot_joints_, wheel_joints_);
       
-      // 从RealtimeBuffer读取最新的cmd_vel消息（实时线程安全读取）
+      // 从RealtimeBuffer读取最新的cmd_vel消息
       geometry_msgs::Twist* cmd_vel_ptr = cmd_vel_buffer_.readFromRT();
       
       // 只有在有新的速度命令时才进行处理
@@ -90,10 +90,7 @@ namespace sentry_chassis_controller {
         vy = 0.0;
         omega = 0.0;
         ROS_DEBUG("速度命令超时,底盘速度为0");
-      }   
-      // 里程计实时更新
-      // odometry_->update(time, period, pivot_joints_, wheel_joints_);
-      
+      }         
       switch (test_mode_){
       case 0:{// 正常模式,没有接受速度指令时车子自锁
         ROS_INFO_ONCE("正常模式");
@@ -166,11 +163,11 @@ namespace sentry_chassis_controller {
   }
   /*接收cmd_vel话题回调函数：只用作写入缓冲区*/
   void SentryChassisController::cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg){
-    // 步骤1: 将收到的Twist消息写入RealtimeBuffer（非实时线程安全）
+    // 将收到的Twist消息写入RealtimeBuffer
     geometry_msgs::Twist cmd_vel = *msg;
     cmd_vel_buffer_.writeFromNonRT(cmd_vel);
     
-    // 步骤2: 更新最后一次收到命令的时间戳
+    // 更新最后一次收到命令的时间戳
     last_cmd_vel_time_ = ros::Time::now();
   }
   /*测试模式回调函数*/

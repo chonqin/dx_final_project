@@ -4,6 +4,7 @@
     用于验证代码的正确性和功能实现
     在主控器里面调用测试函数来展示功能
     包含：
+        八个轮子的pid核心控制函数
         测试四个驱动轮子pid和dynamic_reconfigure
         测试四个转向舵轮pid和dynamic_reconfigure
         ...
