@@ -60,6 +60,8 @@ namespace sentry_chassis_controller {
             std::array<ros::Publisher, 4> wheel_actual_pub;
             std::array<ros::Publisher, 4> pivot_target_pub;
             std::array<ros::Publisher, 4> pivot_actual_pub;
+            // 功率数据发布对象
+            ros::Publisher power_limited_pub = ros::Publisher();
             //dynamic_reconfigure 服务器对象
             std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
             // 接收cmd_vel话题回调对象

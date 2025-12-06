@@ -41,6 +41,8 @@ namespace sentry_chassis_controller {
     // 订阅cmd_vel话题
     cmd_vel_sub = controller_nh.subscribe<geometry_msgs::Twist>(
       "/cmd_vel", 1, &SentryChassisController::cmdvel_callback, this);
+    // 初始化功率数据发布器
+    power_limited_pub = controller_nh.advertise<std_msgs::Float64>("power_limited", 1);
     // 初始化速度命令时间戳
     last_cmd_vel_time_ = ros::Time::now();
     // 发布里程计话题 
@@ -54,14 +56,14 @@ namespace sentry_chassis_controller {
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
       odometry_->update(time, period, pivot_joints_, wheel_joints_);
       
-      // 从RealtimeBuffer读取最新的cmd_vel消息
+      // 从RealtimeBuffer读取最新的cmd_vel消息（实时线程安全读取）
       geometry_msgs::Twist* cmd_vel_ptr = cmd_vel_buffer_.readFromRT();
       
       // 只有在有新的速度命令时才进行处理
       if (cmd_vel_ptr != nullptr && (time - last_cmd_vel_time_).toSec() < cmd_vel_timeout_) {
         //  接收到新的速度命令
         geometry_msgs::Twist received_vel = *cmd_vel_ptr;
-        ROS_INFO("收到原始cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
+        ROS_INFO_THROTTLE(1.0, "收到原始cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
                  received_vel.linear.x, received_vel.linear.y, received_vel.angular.z);
               
         // 步骤3: 根据坐标系选择进行坐标变换或直接使用
@@ -72,7 +74,7 @@ namespace sentry_chassis_controller {
           vx = local_vel.linear.x;
           vy = local_vel.linear.y;
           omega = local_vel.angular.z;
-          ROS_INFO("转换到底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
+          ROS_INFO_THROTTLE(1.0, "转换到底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
                    vx, vy, omega);
         } 
         else if(coordinate_system) {
@@ -80,7 +82,7 @@ namespace sentry_chassis_controller {
           vx = received_vel.linear.x;
           vy = received_vel.linear.y;
           omega = received_vel.angular.z;
-          ROS_INFO("使用底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
+          ROS_INFO_THROTTLE(1.0, "使用底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
                    vx, vy, omega);
         }
       }
@@ -90,7 +92,10 @@ namespace sentry_chassis_controller {
         vy = 0.0;
         omega = 0.0;
         ROS_DEBUG("速度命令超时,底盘速度为0");
-      }         
+      }   
+      // 里程计实时更新
+      // odometry_->update(time, period, pivot_joints_, wheel_joints_);
+      
       switch (test_mode_){
       case 0:{// 正常模式,没有接受速度指令时车子自锁
         ROS_INFO_ONCE("正常模式");
@@ -155,19 +160,16 @@ namespace sentry_chassis_controller {
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
       }
-      case 8: {
-        break;
-      }
       // powerlimit(wheel_joints_,pivot_joints_);
     }
   }
   /*接收cmd_vel话题回调函数：只用作写入缓冲区*/
   void SentryChassisController::cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg){
-    // 将收到的Twist消息写入RealtimeBuffer
+    // 步骤1: 将收到的Twist消息写入RealtimeBuffer（非实时线程安全）
     geometry_msgs::Twist cmd_vel = *msg;
     cmd_vel_buffer_.writeFromNonRT(cmd_vel);
     
-    // 更新最后一次收到命令的时间戳
+    // 步骤2: 更新最后一次收到命令的时间戳
     last_cmd_vel_time_ = ros::Time::now();
   }
   /*测试模式回调函数*/
@@ -250,8 +252,9 @@ namespace sentry_chassis_controller {
     wheel_base_ = controller_nh.param("wheel_base", 0.362);
     wheel_radius_ = controller_nh.param("wheel_radius", 0.055);
     coordinate_system = controller_nh.param("coordinate_system", 0);
-    vel_coeff = controller_nh.param("vel_coeff", 0.6);
-    effort_coeff = controller_nh.param("effort_coeff", 0.4);
+    vel_coeff = controller_nh.param("vel_coeff", 0.0048);
+    effort_coeff = controller_nh.param("effort_coeff", 12);
+    power_offset_ = controller_nh.param("power_offset", 0.0);
     ROS_INFO("坐标系模式: %d", coordinate_system);
     /*从参数服务器获取八组PID参数*/  
     //加载轮速pid参数 
@@ -292,9 +295,10 @@ namespace sentry_chassis_controller {
   void SentryChassisController::powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
                                           std::array<hardware_interface::JointHandle, 4>& pivot_joints){
     double power_limit = 80; // 功率限制，单位瓦特,数值假设为80W
+    double limited_effort = 0.0;
     double a = 0, b = 0, c = 0; // 用于计算功率的中间变量                   
     for(size_t i = 0; i < 4; i++) {
-      double vel = wheel_joints[i].getVelocity();
+      double vel = wheel_joints[i].getCommand();
       double effort = wheel_joints[i].getEffort();
       // 计算功率
       a += std::pow(effort,2);  // τ²
@@ -308,22 +312,26 @@ namespace sentry_chassis_controller {
 
     double k = 1.0; // 功率限制系数，初始为1.0（不限制）
     if(b!=0){ // 避免除零错误
-      k = (-b + std::sqrt(b*b - 4*a*c) )/ (2*a);
+      k = (-b + std::max(std::sqrt(b*b - 4*a*c),0.0 ))/ (2*a);
     }
     // 应用功率限制系数
     if(k < 1.0) {
       for(size_t i = 0; i < 4; i++) {
-        double limited_effort = wheel_joints[i].getEffort() * k;
+        limited_effort = wheel_joints[i].getCommand() * k;
         wheel_joints[i].setCommand(limited_effort);
       }
     }
     else{
       // 不需要限制，保持原命令
       for(size_t i = 0; i < 4; i++) {
-        double original_effort = wheel_joints[i].getEffort();
+        double original_effort = wheel_joints[i].getCommand();
         wheel_joints[i].setCommand(original_effort);
       }
     }
+    // 发布功率限制信息
+    std_msgs::Float64 power_msg;
+    power_msg.data = limited_effort *  k;
+    power_limited_pub.publish(power_msg);
   }
 }
 PLUGINLIB_EXPORT_CLASS(sentry_chassis_controller::SentryChassisController, 
