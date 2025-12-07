@@ -37,7 +37,7 @@ namespace sentry_chassis_controller {
             double wheel_velocity = std::sqrt(vx_wheel * vx_wheel + vy_wheel * vy_wheel);
             wheel_speed[i] = wheel_velocity / wheel_radius_;
         
-            // 计算转向角（使用atan2(vy, vx)定义）
+            // 计算转向角
             double target_angle = std::atan2(vy_wheel, vx_wheel);
         
             // 优化角度选择：选择与当前角度最接近的目标角度

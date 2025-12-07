@@ -9,6 +9,15 @@
         ...
 */
 namespace sentry_chassis_controller {
+    /*
+        pid_control
+        使用pid控制四个轮子的速度和四个舵轮的角度
+        输入:八个轮子的关节句柄数组，
+            四个轮子的目标速度数组，四个轮子的目标角度数组，
+            四个驱动轮的pid数组，四个舵向轮的pid数组，
+            四个轮子的目标速度发布器数组，四个轮子的实际速度发布器数组，
+            四个舵轮的目标角度发布器数组，四个舵轮的实际角度发布器数组，控制周期
+    */
     void pid_control(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
                         std::array<hardware_interface::JointHandle, 4>& pivot_joints,
                         std::array<double, 4> &wheel_speed,
@@ -92,7 +101,6 @@ namespace sentry_chassis_controller {
                          std::array<ros::Publisher, 4>& pivot_actual_pub,
                          double target_,
                          const ros::Duration& period){
-        //const double target_angle = 3.14/2.0; // 目标角度
         std_msgs::Float64 msg;
         // 对每个轮子进行PID控制测试，i为轮子索引，索引0-3统一。
         for (size_t i = 0; i < 4; i++) {

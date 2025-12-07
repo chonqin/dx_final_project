@@ -11,6 +11,8 @@ sentry_chassis_controller:
   power_offset: 0.0
   # 坐标系选择: 0->全局坐标系, 1->底盘坐标系
   coordinate_system: 0
+  # 小陀螺速度
+  rotation_vel: 5.0
   # PID 参数
   pid:
     front_left_wheel:

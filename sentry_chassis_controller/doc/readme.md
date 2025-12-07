@@ -38,7 +38,7 @@
 - doc : 存放说明文档
 - include : 存放头文件
 - src : 存放源文件
-    - function.cpp : pid功能实现
+    - function.cpp/h : pid功能实现
     - kinematics.cpp/h : 运动学计算
     - odometry.cpp/h : 里程计实现
     - sentry_chassis_controller.cpp/h : 主控器实现

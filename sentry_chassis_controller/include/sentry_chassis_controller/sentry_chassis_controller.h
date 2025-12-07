@@ -44,6 +44,7 @@ namespace sentry_chassis_controller {
             int test_mode_ = 0 ;
             double target_ = 10.0; // 目标，用于测试pid参数效果
             double vel_coeff ,effort_coeff, power_offset_; // 功率计算系数,需要根据实际测定
+            double rotation_vel;// 小陀螺模式下的旋转速度
             // 底盘运动学定义
             double vx , vy, omega; // 线速度和角速度
             // 存储四个驱动轮速度和转向轮转向角度
