@@ -6,20 +6,24 @@
     <arg name="paused" value="false"/>
   </include>
 
-  <!-- 加载yaml参数文件 -->
-  <rosparam file="$(find sentry_chassis_controller)/config/sentry_chassis_controller.yaml" command="load" />
   <!-- 发布robot_state,用于在RViz中显示机器人模型和TF树 -->
   <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  <!-- 加载yaml参数文件 -->
+  <rosparam file="$(find sentry_chassis_controller)/config/sentry_chassis_controller.yaml" command="load" />
   <!-- 启动底盘控制器节点 -->
   <node name="controller_spawner" pkg="controller_manager" 
   type="spawner" args="sentry_chassis_controller joint_state_controller" 
   output="screen" respawn="false"/>
 
-  <!--  启动键盘输入节点 -->
+  <!--  启动键盘输入节点 , 在一个新的终端窗口中显示-->
   <node name="choose_testmode" pkg="sentry_chassis_controller" type="choose_testmode_node" 
   output="screen" />
-  <!-- 启动键盘控制节点，在一个新的终端窗口中显示-->
+
   <node name="keyboard_control" pkg="sentry_chassis_controller" type="keyboard_control_node" 
   output="screen" launch-prefix="gnome-terminal -e"/>
   
+  <node pkg="rqt_plot" type="rqt_plot" name="rqt_plot" />
+
+  <node pkg="rviz" type="rviz" name="rviz"/>  
 </launch>

@@ -135,8 +135,23 @@ namespace sentry_chassis_controller {
       }
       case 5: {// 实现小陀螺模式,车子原地旋转
         ROS_INFO_ONCE("小陀螺模式启动，车子原地旋转");
-        wheel_speed = {8.33, 8.33, 8.33, 8.33};// 轮速随意设定
-        steering_angle = {2.36, 0.79, -2.36, -0.79};// 转向角度设定为逆时针旋转
+        double spin_omega = 2.5;// 自定义小陀螺速度
+        // 从RealtimeBuffer读取最新的cmd_vel消息
+        geometry_msgs::Twist* cmd_vel_ptr = cmd_vel_buffer_.readFromRT();
+        double cmd_vx = 0.0 , cmd_vy = 0.0;
+        if (cmd_vel_ptr != nullptr) {
+          cmd_vx = cmd_vel_ptr->linear.x;
+          cmd_vy = cmd_vel_ptr->linear.y;
+        }
+        vx = cmd_vx;
+        vy = cmd_vy;
+        omega = spin_omega;
+        // 获取当前转向角度
+        std::array<double, 4> current_angles;
+        for(size_t i = 0; i < 4; i++) {
+          current_angles[i] = pivot_joints_[i].getPosition();
+        }
+        Inverse_solution(vx, vy, omega, wheel_base_, wheel_track_, wheel_radius_, wheel_speed, steering_angle, current_angles);
         pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
