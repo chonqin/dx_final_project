@@ -47,6 +47,9 @@ namespace sentry_chassis_controller {
             double rotation_vel;// 小陀螺模式下的旋转速度
             // 底盘运动学定义
             double vx , vy, omega; // 线速度和角速度
+            // 加速度平滑控制相关变量
+            double max_linear_acc_;  // 最大线加速度 (m/s²)
+            double vx_last_, vy_last_; // 上一时刻的速度
             // 存储四个驱动轮速度和转向轮转向角度
             std::array<double, 4> wheel_speed= {0.0, 0.0, 0.0, 0.0}; 
             std::array<double, 4> steering_angle= {0.0, 0.0, 0.0, 0.0}; 
@@ -84,6 +87,7 @@ namespace sentry_chassis_controller {
             bool tf_global_to_local(const geometry_msgs::Twist& global_vel, geometry_msgs::Twist& local_vel);
             void powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
                             std::array<hardware_interface::JointHandle, 4>& pivot_joints);
+            void applyAcc_limit(double& vx_target, double& vy_target,double period);
     };
 }// namespace sentry_chassis_controller
 

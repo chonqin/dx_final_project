@@ -45,6 +45,9 @@ namespace sentry_chassis_controller {
     power_limited_pub = controller_nh.advertise<std_msgs::Float64>("power_limited", 1);
     // 初始化速度命令时间戳
     last_cmd_vel_time_ = ros::Time::now();
+    // 初始化加速度控制相关变量
+    vx_last_ = 0.0;
+    vy_last_ = 0.0;
     // 发布里程计话题 
     odometry_ = std::make_unique<Odometry>(controller_nh, wheel_base_, wheel_track_, wheel_radius_);
     ROS_INFO("初始化成功!默认模式为0...等待键盘输入测试模式...");
@@ -55,26 +58,23 @@ namespace sentry_chassis_controller {
   /*ros_control update函数*/
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
       odometry_->update(time, period, pivot_joints_, wheel_joints_);
-      
       // 从RealtimeBuffer读取最新的cmd_vel消息（实时线程安全读取）
       geometry_msgs::Twist* cmd_vel_ptr = cmd_vel_buffer_.readFromRT();
       geometry_msgs::Twist received_vel ;
-      // 只有在有新的速度命令时才进行处理
-      if (cmd_vel_ptr != nullptr && (time - last_cmd_vel_time_).toSec() < cmd_vel_timeout_) {
-        //  接收到新的速度命令
-         received_vel = *cmd_vel_ptr;
-        ROS_INFO_THROTTLE(1.0, "收到原始cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
-                 received_vel.linear.x, received_vel.linear.y, received_vel.angular.z);
-      }
-      else {
-        // 速度命令超时，设置为零速度
+      if ((time - last_cmd_vel_time_).toSec() > cmd_vel_timeout_) {
         received_vel.linear.x = 0.0;
         received_vel.linear.y = 0.0;
         received_vel.linear.z = 0.0;
         received_vel.angular.x = 0.0;
         received_vel.angular.y = 0.0;
         received_vel.angular.z = 0.0;
-        ROS_DEBUG("速度命令超时,底盘速度为0");
+        ROS_WARN_THROTTLE(1.0, "cmd_vel命令超时");
+      }
+      else {
+        //  接收到新的速度命令
+        received_vel = *cmd_vel_ptr;
+        ROS_INFO_THROTTLE(1.0, "收到原始cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
+                 received_vel.linear.x, received_vel.linear.y, received_vel.angular.z);
       }
       // 根据坐标系选择进行坐标变换或直接使用
       if(!coordinate_system) {
@@ -88,16 +88,19 @@ namespace sentry_chassis_controller {
                    vx, vy, omega);
       } 
       else {
-        // 否则直接使用接收到的速度（底盘坐标系）
+        // 直接使用底盘坐标系的速度指令
         vx = received_vel.linear.x;
         vy = received_vel.linear.y;
         omega = received_vel.angular.z;
-        ROS_INFO_THROTTLE(1.0, "使用底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
+        ROS_INFO_THROTTLE(1.0, "使用原始底盘坐标系cmd_vel: 线速度(%.2f, %.2f), 角速度(%.2f)", 
                    vx, vy, omega);
       }  
+      // 应用加速度平滑控制
+      applyAcc_limit(vx, vy, period.toSec());
+      
       switch (test_mode_){
-      case 0:{// 正常模式
-        ROS_INFO_ONCE("正常模式");
+      case 0:{// 静止模式
+        ROS_INFO_ONCE("静止模式");
         break;
       }
       case 1:{// 测试转向轮pid
@@ -111,7 +114,7 @@ namespace sentry_chassis_controller {
         break;
       }
       case 3:{// 测试逆运动学,先在终端给出速度指令，然后解算轮速和转向角度，最后进行pid控制
-        ROS_INFO_ONCE("测试逆运动学函数，计算轮速和转向角度");
+        ROS_INFO_ONCE("测试逆运动学函数，计算轮速和转向角度");      
         std::array<double, 4> current_angles;
         for(size_t i = 0; i < 4; i++) {
           current_angles[i] = pivot_joints_[i].getPosition();
@@ -132,21 +135,15 @@ namespace sentry_chassis_controller {
         ROS_INFO("正运动学解算结果: vx=%.2f, vy=%.2f, omega=%.2f ", vx, vy, omega);
         break;
       }
-      case 5: {// 实现小陀螺模式,一边小陀螺一边移动
+      case 5: {// 实现小陀螺模式
         ROS_INFO_ONCE("小陀螺模式启动，使用键盘控制线速度");
-        geometry_msgs::Twist twist_vel;
-        geometry_msgs::Twist twist_after_vel;
-        twist_vel.linear.x = received_vel.linear.x;
-        twist_vel.linear.y = received_vel.linear.y;
-        twist_vel.angular.z = rotation_vel; // 使用参数文件内预设的小陀螺速度
-        tf_global_to_local(twist_vel, twist_after_vel);
-        // 获取当前转向角度
-        std::array<double, 4> current_angles;
-        // 获取当前转向角度
+        std::array<double, 4> current_angle;
         for(size_t i = 0; i < 4; i++) {
-          current_angles[i] = pivot_joints_[i].getPosition();
+          current_angle[i] = pivot_joints_[i].getPosition();
         }
-        Inverse_solution(twist_after_vel.linear.x, twist_after_vel.linear.y, twist_after_vel.angular.z, wheel_base_, wheel_track_, wheel_radius_, wheel_speed, steering_angle, current_angles);
+        Inverse_solution(0, 0, rotation_vel, 
+                         wheel_base_, wheel_track_, wheel_radius_, 
+                         wheel_speed, steering_angle, current_angle);
         pid_control(wheel_joints_,pivot_joints_, wheel_speed, steering_angle, wheel_pids_, 
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
@@ -175,18 +172,20 @@ namespace sentry_chassis_controller {
   }
   /*接收cmd_vel话题回调函数：只用作写入缓冲区*/
   void SentryChassisController::cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg){
-    // 步骤1: 将收到的Twist消息写入RealtimeBuffer（非实时线程安全）
+    // 将收到的Twist消息写入RealtimeBuffer（非实时线程安全）
     geometry_msgs::Twist cmd_vel = *msg;
     cmd_vel_buffer_.writeFromNonRT(cmd_vel);
     
-    // 步骤2: 更新最后一次收到命令的时间戳
+    // 更新最后一次收到命令的时间戳
     last_cmd_vel_time_ = ros::Time::now();
   }
+
   /*测试模式回调函数*/
   void SentryChassisController::testmode_callback(const std_msgs::Int32::ConstPtr& msg){
     test_mode_ = msg->data;
     ROS_INFO("测试模式已切换为: %d", test_mode_);
   }
+
   /*动态参数更改回调函数*/
   void SentryChassisController::dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level) {
     ROS_INFO("Dynamic reconfigure 更新PID参数");
@@ -266,7 +265,9 @@ namespace sentry_chassis_controller {
     effort_coeff = controller_nh.param("effort_coeff", 12);
     power_offset_ = controller_nh.param("power_offset", 0.0);
     rotation_vel = controller_nh.param("rotation_vel", 5.0);
+    max_linear_acc_ = controller_nh.param("max_linear_acc", 2.0);
     ROS_INFO("坐标系模式: %d", coordinate_system);
+    ROS_INFO("线性加速度限制: %.2f m/s²", max_linear_acc_);
     /*从参数服务器获取八组PID参数*/  
     //加载轮速pid参数 
     for (size_t j = 0; j < 4; j++){
@@ -301,6 +302,36 @@ namespace sentry_chassis_controller {
       pivot_pids_[i].reset();
     }  
   }
+  
+  /*加速度平滑控制函数：限制底盘加速度，实现平滑控制*/
+  void SentryChassisController::applyAcc_limit(double& vx_target, double& vy_target, double period) {
+    if (period <= 0) {
+        return;
+    }
+    // 计算目标加速度
+    double ax = (vx_target - vx_last_) / period;
+    double ay = (vy_target - vy_last_) / period;
+
+    // 限制线性加速度
+    if (std::sqrt(ax * ax + ay * ay) > max_linear_acc_) {
+        double scale = max_linear_acc_ / std::sqrt(ax * ax + ay * ay);
+        ax *= scale;
+        ay *= scale;
+
+        // 添加调试日志
+        ROS_WARN("加速度限制触发 - 原始加速度: %.3f m/s², 限制加速度: %.3f m/s²", 
+                 std::sqrt(ax * ax + ay * ay), max_linear_acc_);
+        ROS_WARN("速度调整前: vx_target=%.3f, vy_target=%.3f", vx_target, vy_target);
+    }
+
+    // 更新目标速度
+    vx_target = vx_last_ + ax * period;
+    vy_target = vy_last_ + ay * period;
+
+    // 保存当前速度用于下一次计算
+    vx_last_ = vx_target;
+    vy_last_ = vy_target;
+}
   
   /*功率限制*/
   void SentryChassisController::powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,

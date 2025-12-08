@@ -1,6 +1,6 @@
 sentry_chassis_controller:
   type: sentry_chassis_controller/SentryChassisController 
-
+  publish_rate: 100
   # 底盘参数
   wheel_track: 0.362
   wheel_base: 0.362
@@ -13,6 +13,9 @@ sentry_chassis_controller:
   coordinate_system: 0
   # 小陀螺速度
   rotation_vel: 5.0
+  # 加速度限制参数
+  max_linear_acc: 2.0    # 最大线加速度 (m/s²)
+  max_angular_acc: 3.0   # 最大角加速度 (rad/s²)
   # PID 参数
   pid:
     front_left_wheel:
