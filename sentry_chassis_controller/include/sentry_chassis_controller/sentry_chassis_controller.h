@@ -79,6 +79,8 @@ namespace sentry_chassis_controller {
             std::unique_ptr<Odometry> odometry_;
             // tf监听器指针
             std::unique_ptr<tf::TransformListener> tf_listener_ ;
+            // 加速度限制调试发布器
+            ros::Publisher acc_debug_pub;
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);
@@ -87,7 +89,7 @@ namespace sentry_chassis_controller {
             bool tf_global_to_local(const geometry_msgs::Twist& global_vel, geometry_msgs::Twist& local_vel);
             void powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
                             std::array<hardware_interface::JointHandle, 4>& pivot_joints);
-            void applyAcc_limit(double& vx_target, double& vy_target,double period);
+            void applyAcc_limit(double& target_,double& last_,double period);
     };
 }// namespace sentry_chassis_controller
 

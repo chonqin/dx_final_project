@@ -50,6 +50,8 @@ namespace sentry_chassis_controller {
     vy_last_ = 0.0;
     // 发布里程计话题 
     odometry_ = std::make_unique<Odometry>(controller_nh, wheel_base_, wheel_track_, wheel_radius_);
+    // 初始化加速度限制发布器
+    acc_debug_pub = controller_nh.advertise<std_msgs::Float64>("acc_debug", 1);
     ROS_INFO("初始化成功!默认模式为0...等待键盘输入测试模式...");
     return true;
 
@@ -96,8 +98,8 @@ namespace sentry_chassis_controller {
                    vx, vy, omega);
       }  
       // 应用加速度平滑控制
-      applyAcc_limit(vx, vy, period.toSec());
-      
+      applyAcc_limit(vx,vx_last_,period.toSec());
+      applyAcc_limit(vy,vy_last_,period.toSec());
       switch (test_mode_){
       case 0:{// 静止模式
         ROS_INFO_ONCE("静止模式");
@@ -304,33 +306,33 @@ namespace sentry_chassis_controller {
   }
   
   /*加速度平滑控制函数：限制底盘加速度，实现平滑控制*/
-  void SentryChassisController::applyAcc_limit(double& vx_target, double& vy_target, double period) {
+  void SentryChassisController::applyAcc_limit(double& target_,double& last_, double period) {
     if (period <= 0) {
         return;
     }
     // 计算目标加速度
-    double ax = (vx_target - vx_last_) / period;
-    double ay = (vy_target - vy_last_) / period;
+    double deltax = (target_ - last_) / period;
+    
 
     // 限制线性加速度
-    if (std::sqrt(ax * ax + ay * ay) > max_linear_acc_) {
-        double scale = max_linear_acc_ / std::sqrt(ax * ax + ay * ay);
-        ax *= scale;
-        ay *= scale;
-
+    if (std::abs(deltax) > max_linear_acc_) {
+        double scale = max_linear_acc_ / std::abs(deltax);
+        deltax *= scale;
         // 添加调试日志
         ROS_WARN("加速度限制触发 - 原始加速度: %.3f m/s², 限制加速度: %.3f m/s²", 
-                 std::sqrt(ax * ax + ay * ay), max_linear_acc_);
-        ROS_WARN("速度调整前: vx_target=%.3f, vy_target=%.3f", vx_target, vy_target);
+                 deltax, max_linear_acc_);
+        ROS_WARN("速度调整前: target_=%.3f", target_);
     }
 
     // 更新目标速度
-    vx_target = vx_last_ + ax * period;
-    vy_target = vy_last_ + ay * period;
+    target_ = last_ + deltax * period;
 
+    // 发布加速度调试信息
+    std_msgs::Float64 acc_msg;
+    acc_msg.data = target_;
+    acc_debug_pub.publish(acc_msg);
     // 保存当前速度用于下一次计算
-    vx_last_ = vx_target;
-    vy_last_ = vy_target;
+    last_ = target_;
 }
   
   /*功率限制*/
