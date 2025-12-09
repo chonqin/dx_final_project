@@ -7,9 +7,7 @@ int main(int argc, char** argv) {
     setlocale(LC_ALL, "");
     ros::init(argc, argv, "choose_testmode_node");
     ros::NodeHandle nh;
-
     ros::Publisher mode_pub = nh.advertise<std_msgs::Int32>("/test_mode", 1);
-
     std::cout << "键盘监听已启动，请输入数字选择测试模式并按回车：" << std::endl;
     std::cout << "  0: 正常模式,开启键盘控制和pid控制" << std::endl;
     std::cout << "  1: 测试转向PID" << std::endl;

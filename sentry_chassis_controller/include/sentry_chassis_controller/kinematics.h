@@ -10,6 +10,7 @@ namespace sentry_chassis_controller {
     /*
             Inverse_solutio
             逆运动学：将底盘的速度转化为轮速和转向角度
+            额外加入了当前转向角度参数，用于优化转向角选择
             输入： 底盘线速度vx, vy和角速度omega
             输出： 四个轮子的速度wheel_speeds和转向角度steering
     */

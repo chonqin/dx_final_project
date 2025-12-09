@@ -44,8 +44,12 @@ namespace sentry_chassis_controller {
             int test_mode_ = 0 ;
             double target_ = 10.0; // 目标，用于测试pid参数效果
             double vel_coeff ,effort_coeff, power_offset_; // 功率计算系数,需要根据实际测定
+            double rotation_vel;// 小陀螺模式下的旋转速度
             // 底盘运动学定义
             double vx , vy, omega; // 线速度和角速度
+            // 加速度平滑控制相关变量
+            double max_linear_acc_;  // 最大线加速度 (m/s²)
+            double vx_last_, vy_last_; // 上一时刻的速度
             // 存储四个驱动轮速度和转向轮转向角度
             std::array<double, 4> wheel_speed= {0.0, 0.0, 0.0, 0.0}; 
             std::array<double, 4> steering_angle= {0.0, 0.0, 0.0, 0.0}; 
@@ -60,6 +64,8 @@ namespace sentry_chassis_controller {
             std::array<ros::Publisher, 4> wheel_actual_pub;
             std::array<ros::Publisher, 4> pivot_target_pub;
             std::array<ros::Publisher, 4> pivot_actual_pub;
+            // 功率数据发布对象
+            ros::Publisher power_limited_pub = ros::Publisher();
             //dynamic_reconfigure 服务器对象
             std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
             // 接收cmd_vel话题回调对象
@@ -73,6 +79,8 @@ namespace sentry_chassis_controller {
             std::unique_ptr<Odometry> odometry_;
             // tf监听器指针
             std::unique_ptr<tf::TransformListener> tf_listener_ ;
+            // 加速度限制调试发布器
+            ros::Publisher acc_debug_pub;
             // 从yaml文件加载参数函数
             void controller_param_load(ros::NodeHandle &controller_nh);
             void testmode_callback(const std_msgs::Int32::ConstPtr& msg);
@@ -81,6 +89,7 @@ namespace sentry_chassis_controller {
             bool tf_global_to_local(const geometry_msgs::Twist& global_vel, geometry_msgs::Twist& local_vel);
             void powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
                             std::array<hardware_interface::JointHandle, 4>& pivot_joints);
+            void applyAcc_limit(double& target_,double& last_,double period);
     };
 }// namespace sentry_chassis_controller
 
