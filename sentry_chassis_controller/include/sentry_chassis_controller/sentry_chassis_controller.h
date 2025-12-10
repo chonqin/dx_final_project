@@ -65,7 +65,8 @@ namespace sentry_chassis_controller {
             std::array<ros::Publisher, 4> pivot_target_pub;
             std::array<ros::Publisher, 4> pivot_actual_pub;
             // 功率数据发布对象
-            ros::Publisher power_limited_pub = ros::Publisher();
+            ros::Publisher power_original_pub;   // 实时功率
+            ros::Publisher power_limited_pub;  // 限制后的功率
             //dynamic_reconfigure 服务器对象
             std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
             // 接收cmd_vel话题回调对象
@@ -87,8 +88,7 @@ namespace sentry_chassis_controller {
             void dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level);
             void cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg);
             bool tf_global_to_local(const geometry_msgs::Twist& global_vel, geometry_msgs::Twist& local_vel);
-            void powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
-                            std::array<hardware_interface::JointHandle, 4>& pivot_joints);
+            void powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints);
             void applyAcc_limit(double& target_,double& last_,double period);
     };
 }// namespace sentry_chassis_controller
