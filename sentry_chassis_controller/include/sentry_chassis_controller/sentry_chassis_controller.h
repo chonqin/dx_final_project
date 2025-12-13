@@ -40,10 +40,10 @@ namespace sentry_chassis_controller {
         private:
             double wheel_base_, wheel_track_ , wheel_radius_;// 车轮间距和轴距
             int coordinate_system;//坐标系选择,1为全局坐标系，0为底盘坐标系
-            //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
+            //测试模式选择 
             int test_mode_ = 0 ;
             double target_ = 10.0; // 目标，用于测试pid参数效果
-            double vel_coeff ,effort_coeff, power_offset_; // 功率计算系数,需要根据实际测定
+            double vel_coeff ,effort_coeff, power_offset_;// 功率计算系数,需要根据实际测定
             double rotation_vel;// 小陀螺模式下的旋转速度
             // 底盘运动学定义
             double vx , vy, omega; // 线速度和角速度
@@ -65,7 +65,8 @@ namespace sentry_chassis_controller {
             std::array<ros::Publisher, 4> pivot_target_pub;
             std::array<ros::Publisher, 4> pivot_actual_pub;
             // 功率数据发布对象
-            ros::Publisher power_limited_pub = ros::Publisher();
+            ros::Publisher power_original_pub;   // 实时功率
+            ros::Publisher power_limited_pub;  // 限制后的功率
             //dynamic_reconfigure 服务器对象
             std::unique_ptr<dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>> dynamic_server;
             // 接收cmd_vel话题回调对象
@@ -87,8 +88,7 @@ namespace sentry_chassis_controller {
             void dynamicReconfigureCallback(sentry_chassis_controller::SentryChassisControllerConfig &config, uint32_t level);
             void cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg);
             bool tf_global_to_local(const geometry_msgs::Twist& global_vel, geometry_msgs::Twist& local_vel);
-            void powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
-                            std::array<hardware_interface::JointHandle, 4>& pivot_joints);
+            void powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints);
             void applyAcc_limit(double& target_,double& last_,double period);
     };
 }// namespace sentry_chassis_controller

@@ -42,6 +42,8 @@ namespace sentry_chassis_controller {
     cmd_vel_sub = controller_nh.subscribe<geometry_msgs::Twist>(
       "/cmd_vel", 1, &SentryChassisController::cmdvel_callback, this);
     // 初始化功率数据发布器
+    power_original_pub = controller_nh.advertise<std_msgs::Float64>("power_original", 1);
+    // 初始化限制后功率数据发布器
     power_limited_pub = controller_nh.advertise<std_msgs::Float64>("power_limited", 1);
     // 初始化速度命令时间戳
     last_cmd_vel_time_ = ros::Time::now();
@@ -98,8 +100,8 @@ namespace sentry_chassis_controller {
                    vx, vy, omega);
       }  
       // 应用加速度平滑控制
-      applyAcc_limit(vx,vx_last_,period.toSec());
-      applyAcc_limit(vy,vy_last_,period.toSec());
+      //applyAcc_limit(vx,vx_last_,period.toSec());
+      //applyAcc_limit(vy,vy_last_,period.toSec());
       switch (test_mode_){
       case 0:{// 静止模式
         ROS_INFO_ONCE("静止模式");
@@ -169,8 +171,8 @@ namespace sentry_chassis_controller {
           pivot_pids_, wheel_target_pub, wheel_actual_pub, pivot_target_pub, pivot_actual_pub, period);
         break;
       }
-      //powerlimit(wheel_joints_,pivot_joints_);
     }
+    //powerlimit(wheel_joints_);
   }
   /*接收cmd_vel话题回调函数：只用作写入缓冲区*/
   void SentryChassisController::cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg){
@@ -218,10 +220,7 @@ namespace sentry_chassis_controller {
       config.back_right_pivot_d, config.back_right_pivot_i_max, config.back_right_pivot_i_min);
     
     target_ = config.target;
-    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.4f target:%.2f", 
-             config.front_left_wheel_p,
-             config.front_left_wheel_i,
-             config.front_left_wheel_d,
+    ROS_WARN("PID Updated。target:%.2f", 
              config.target);    
   }
 
@@ -336,21 +335,23 @@ namespace sentry_chassis_controller {
 }
   
   /*功率限制*/
-  void SentryChassisController::powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints,
-                                          std::array<hardware_interface::JointHandle, 4>& pivot_joints){
+  void SentryChassisController::powerlimit(std::array<hardware_interface::JointHandle, 4>& wheel_joints){
+    ROS_WARN_ONCE("功率限制启动...");
     double power_limit = 80; // 功率限制，单位瓦特,数值假设为80W
     double limited_effort = 0.0;
     double a = 0, b = 0, c = 0; // 用于计算功率的中间变量                   
-    for(size_t i = 0; i < 4; i++) {
-      double vel = wheel_joints[i].getCommand();
-      double effort = wheel_joints[i].getEffort();
+    for(size_t i = 0; i < 4; i++) {// 获取每个轮子的速度和力矩
+      double vel = wheel_joints[i].getVelocity();
+      double effort = wheel_joints[i].getCommand();
       // 计算功率
       a += std::pow(effort,2);  // τ²
       b += std::abs(vel * effort ); // |ω·τ|
       c += std::pow(vel,2); // ω²
     }
-    // P = effort_coeff * Σ(τ²) + vel_coeff * Σ(ω²) + power_offset_
+    // P = Σ|ω·τ| + effort_coeff * Σ(τ²) + vel_coeff * Σ(ω²) + power_offset_
     // power_offset_ 为基础功率损耗，可以根据实际测定,这里设置为0 
+    double total_power = b + a * effort_coeff + c * vel_coeff + power_offset_; // 计算实时总功率
+    
     a *= effort_coeff;
     c  = c * vel_coeff - power_limit - power_offset_;
 
@@ -358,24 +359,36 @@ namespace sentry_chassis_controller {
     if(b!=0){ // 避免除零错误
       k = (-b + std::max(std::sqrt(b*b - 4*a*c),0.0 ))/ (2*a);
     }
+    
+    // 发布实时功率（无论是否启用限制）
+    std_msgs::Float64 power_original_msg;
+    power_original_msg.data = total_power;
+    power_original_pub.publish(power_original_msg);
+    double j = 0.0, m = 0.0, l = 0.0;
     // 应用功率限制系数
     if(k < 1.0) {
+      ROS_WARN_THROTTLE(1.0, "功率限制触发，限制系数: %.3f, 实时功率: %.3f W", k, total_power);
       for(size_t i = 0; i < 4; i++) {
         limited_effort = wheel_joints[i].getCommand() * k;
         wheel_joints[i].setCommand(limited_effort);
-      }
+        j += std::pow(wheel_joints[i].getCommand() * k, 2);
+        m += std::abs(wheel_joints[i].getVelocity() * wheel_joints[i].getCommand() * k);
+        l += std::pow(wheel_joints[i].getVelocity(), 2);
+      }// P = Σ|ω·τ| + effort_coeff * Σ(τ²) + vel_coeff * Σ(ω²) + power_offset_
+      // 发布限制后的功率
+      double limited_power = m + effort_coeff * j + vel_coeff * l + power_offset_;  // 功率与力矩的平方成正比
+      std_msgs::Float64 power_limited_msg;
+      power_limited_msg.data = limited_power;
+      power_limited_pub.publish(power_limited_msg);
     }
     else{
       // 不需要限制，保持原命令
+      ROS_WARN_THROTTLE(1.0, "功率限制未触发，实时功率: %.3f W", total_power);
       for(size_t i = 0; i < 4; i++) {
         double original_effort = wheel_joints[i].getCommand();
         wheel_joints[i].setCommand(original_effort);
       }
     }
-    // 发布功率限制信息
-    std_msgs::Float64 power_msg;
-    power_msg.data = limited_effort *  k;
-    power_limited_pub.publish(power_msg);
   }
 }
 PLUGINLIB_EXPORT_CLASS(sentry_chassis_controller::SentryChassisController, 
