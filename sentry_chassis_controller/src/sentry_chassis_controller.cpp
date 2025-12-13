@@ -100,8 +100,8 @@ namespace sentry_chassis_controller {
                    vx, vy, omega);
       }  
       // 应用加速度平滑控制
-      applyAcc_limit(vx,vx_last_,period.toSec());
-      applyAcc_limit(vy,vy_last_,period.toSec());
+      //applyAcc_limit(vx,vx_last_,period.toSec());
+      //applyAcc_limit(vy,vy_last_,period.toSec());
       switch (test_mode_){
       case 0:{// 静止模式
         ROS_INFO_ONCE("静止模式");
@@ -172,7 +172,7 @@ namespace sentry_chassis_controller {
         break;
       }
     }
-    powerlimit(wheel_joints_);
+    //powerlimit(wheel_joints_);
   }
   /*接收cmd_vel话题回调函数：只用作写入缓冲区*/
   void SentryChassisController::cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg){
@@ -220,10 +220,7 @@ namespace sentry_chassis_controller {
       config.back_right_pivot_d, config.back_right_pivot_i_max, config.back_right_pivot_i_min);
     
     target_ = config.target;
-    ROS_WARN("PID Updated - P:%.2f I:%.2f D:%.4f target:%.2f", 
-             config.front_left_wheel_p,
-             config.front_left_wheel_i,
-             config.front_left_wheel_d,
+    ROS_WARN("PID Updated。target:%.2f", 
              config.target);    
   }
 
@@ -343,7 +340,7 @@ namespace sentry_chassis_controller {
     double power_limit = 80; // 功率限制，单位瓦特,数值假设为80W
     double limited_effort = 0.0;
     double a = 0, b = 0, c = 0; // 用于计算功率的中间变量                   
-    for(size_t i = 0; i < 4; i++) {
+    for(size_t i = 0; i < 4; i++) {// 获取每个轮子的速度和力矩
       double vel = wheel_joints[i].getVelocity();
       double effort = wheel_joints[i].getCommand();
       // 计算功率

@@ -40,10 +40,10 @@ namespace sentry_chassis_controller {
         private:
             double wheel_base_, wheel_track_ , wheel_radius_;// 车轮间距和轴距
             int coordinate_system;//坐标系选择,1为全局坐标系，0为底盘坐标系
-            //测试模式选择，1为测试pid，0为测试逆运动学，3为测试正运动学，等等...    
+            //测试模式选择 
             int test_mode_ = 0 ;
             double target_ = 10.0; // 目标，用于测试pid参数效果
-            double vel_coeff ,effort_coeff, power_offset_; // 功率计算系数,需要根据实际测定
+            double vel_coeff ,effort_coeff, power_offset_;// 功率计算系数,需要根据实际测定
             double rotation_vel;// 小陀螺模式下的旋转速度
             // 底盘运动学定义
             double vx , vy, omega; // 线速度和角速度
