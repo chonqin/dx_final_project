@@ -28,7 +28,7 @@ namespace sentry_chassis_controller {
         forward_solution(wheel_speed, steering_angle, 
                         wheel_base_, wheel_track_, 
                         wheel_radius_, vx, vy, omega);
-        // 积分里程计                
+        // 根据ros官方对于里程计的描述，编写代码积分里程计                
         double dt = period.toSec();
         double delta_x = (vx  *std::cos(z_)  - vy * std::sin(z_)) * dt;
         double delta_y = (vx  *std::sin(z_)  + vy * std::cos(z_)) * dt;
@@ -36,7 +36,7 @@ namespace sentry_chassis_controller {
         x_ += delta_x;
         y_ += delta_y;
         z_ += delta_z;
-        
+        // 发布tf变换
         geometry_msgs::TransformStamped odom_trans;
         odom_trans.header.stamp = time;
         odom_trans.header.frame_id = "odom";
@@ -44,8 +44,8 @@ namespace sentry_chassis_controller {
         odom_trans.transform.translation.x = x_;
         odom_trans.transform.translation.y = y_;
         odom_trans.transform.translation.z = 0.0;
-        odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(z_);
-        odom_broadcaster.sendTransform(odom_trans);
+        odom_trans.transform.rotation = tf::createQuaternionMsgFromYaw(z_);// 把偏航角转化为ros所需要的四元数格式
+        odom_broadcaster.sendTransform(odom_trans);// 发布
 
         // 发布 nav_msgs::Odometry
         nav_msgs::Odometry odom;

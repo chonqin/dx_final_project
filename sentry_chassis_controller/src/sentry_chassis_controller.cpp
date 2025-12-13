@@ -4,14 +4,15 @@ namespace sentry_chassis_controller {
   /*ros_control init函数*/
   bool SentryChassisController::init(hardware_interface::EffortJointInterface* effort_joint_interface,
                                    ros::NodeHandle& root_nh, ros::NodeHandle& controller_nh) {
-    //由于urdf中定义了四个转向关节和四个车轮关节，这里定义对应的名字数组
+    //由于urdf中定义了四个转向关节和四个车轮关节，这里定义对应的名字数组，交给下面循环获取句柄，能简化代码
     const std::array<std::string, 4> pivot_joint_names = {
       "left_front_pivot_joint", "right_front_pivot_joint", 
       "left_back_pivot_joint", "right_back_pivot_joint"};
     const std::array<std::string, 4> wheel_joint_names = {
       "left_front_wheel_joint", "right_front_wheel_joint", 
       "left_back_wheel_joint", "right_back_wheel_joint"};
-    //获取四个轮子句柄，四个转向关节句柄，索引0-3分别对应左前，右前，左后，右后,索引顺序全项目统一  
+    //获取四个轮子句柄，四个转向关节句柄，索引0-3分别对应左前，右前，左后，右后,索引顺序全项目统一
+    // 这样做方便后续通过索引操作各个轮子和关节  
     for(size_t i = 0; i < 4; ++i) {
       pivot_joints_[i] = effort_joint_interface->getHandle(pivot_joint_names[i]);
       wheel_joints_[i] = effort_joint_interface->getHandle(wheel_joint_names[i]);
@@ -21,7 +22,7 @@ namespace sentry_chassis_controller {
     ROS_INFO("关节句柄获取成功！");  
     //从yaml文件加载参数
     controller_param_load(controller_nh);                                
-    // 初始化pid参数发布器
+    // 初始化pid参数相关的发布器，用于rqt_plot调试
     for (size_t i = 0; i < 4; ++i) {
         wheel_target_pub[i] = controller_nh.advertise<std_msgs::Float64>(wheel_names[i] + "_wheel/target", 1);
         wheel_actual_pub[i] = controller_nh.advertise<std_msgs::Float64>(wheel_names[i] + "_wheel/actual", 1);
@@ -29,10 +30,11 @@ namespace sentry_chassis_controller {
         pivot_actual_pub[i] = controller_nh.advertise<std_msgs::Float64>(wheel_names[i] + "_pivot/actual", 1);
     }
     //初始化 dynamic_reconfigure 服务器，并设置回调函数
+    // 把当前指针指向新的对象，并自动释放原来的对象
     dynamic_server.reset(new dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>(controller_nh));
     dynamic_reconfigure::Server<sentry_chassis_controller::SentryChassisControllerConfig>::CallbackType f =
-    boost::bind(&SentryChassisController::dynamicReconfigureCallback, this, _1, _2);
-    dynamic_server->setCallback(f);
+    boost::bind(&SentryChassisController::dynamicReconfigureCallback, this, _1, _2);// 将成员函数与当前对象绑定，占位符为了防止编译错误
+    dynamic_server->setCallback(f);// 设置回调函数
     // 初始化tf监听器
     tf_listener_ = std::make_unique<tf::TransformListener>();
     // 订阅测试模式话题  
@@ -50,7 +52,7 @@ namespace sentry_chassis_controller {
     // 初始化加速度控制相关变量
     vx_last_ = 0.0;
     vy_last_ = 0.0;
-    // 发布里程计话题 
+    // 初始化里程计话题 
     odometry_ = std::make_unique<Odometry>(controller_nh, wheel_base_, wheel_track_, wheel_radius_);
     // 初始化加速度限制发布器
     acc_debug_pub = controller_nh.advertise<std_msgs::Float64>("acc_debug", 1);
@@ -62,7 +64,7 @@ namespace sentry_chassis_controller {
   /*ros_control update函数*/
   void SentryChassisController::update(const ros::Time& time, const ros::Duration& period) {
       odometry_->update(time, period, pivot_joints_, wheel_joints_);
-      // 从RealtimeBuffer读取最新的cmd_vel消息（实时线程安全读取）
+      // 从RealtimeBuffer读取最新的cmd_vel消息
       geometry_msgs::Twist* cmd_vel_ptr = cmd_vel_buffer_.readFromRT();
       geometry_msgs::Twist received_vel ;
       if ((time - last_cmd_vel_time_).toSec() > cmd_vel_timeout_) {
@@ -100,8 +102,8 @@ namespace sentry_chassis_controller {
                    vx, vy, omega);
       }  
       // 应用加速度平滑控制
-      //applyAcc_limit(vx,vx_last_,period.toSec());
-      //applyAcc_limit(vy,vy_last_,period.toSec());
+      applyAcc_limit(vx,vx_last_,period.toSec());
+      applyAcc_limit(vy,vy_last_,period.toSec());
       switch (test_mode_){
       case 0:{// 静止模式
         ROS_INFO_ONCE("静止模式");
@@ -172,11 +174,11 @@ namespace sentry_chassis_controller {
         break;
       }
     }
-    //powerlimit(wheel_joints_);
+    powerlimit(wheel_joints_);
   }
   /*接收cmd_vel话题回调函数：只用作写入缓冲区*/
   void SentryChassisController::cmdvel_callback(const geometry_msgs::Twist::ConstPtr& msg){
-    // 将收到的Twist消息写入RealtimeBuffer（非实时线程安全）
+    // 将收到的Twist消息写入RealtimeBuffer
     geometry_msgs::Twist cmd_vel = *msg;
     cmd_vel_buffer_.writeFromNonRT(cmd_vel);
     
@@ -236,11 +238,11 @@ namespace sentry_chassis_controller {
     // 获取旋转矩阵：R_odom_to_base（从odom到base_link的旋转）
     tf::Matrix3x3 R_odom_to_base(transform.getRotation());
       
-    // 提取全局速度向量
+    // 提取全局速度向量，封装成三维向量
     tf::Vector3 global_linear(global_vel.linear.x, global_vel.linear.y, 0);
       
     // 将全局线速度变换到底盘坐标系
-    // 公式：v_local = R_odom_to_base^T * v_global （使用转置，将全局坐标变换到局部坐标）
+    // 公式：v_local = R_odom_to_base^T * v_global 
     tf::Vector3 local_linear = R_odom_to_base.transpose() * global_linear;
       
     // 角速度在两坐标系中相同（绕z轴）
@@ -298,6 +300,7 @@ namespace sentry_chassis_controller {
       //初始化对应的pid对象
       pivot_pids_[j].initPid(p, i, d, i_max, i_min);
     }
+    // 初始化的时候重置一下积分项
     for (size_t i = 0; i < 4; ++i) {
       wheel_pids_[i].reset();
       pivot_pids_[i].reset();
@@ -311,8 +314,6 @@ namespace sentry_chassis_controller {
     }
     // 计算目标加速度
     double deltax = (target_ - last_) / period;
-    
-
     // 限制线性加速度
     if (std::abs(deltax) > max_linear_acc_) {
         double scale = max_linear_acc_ / std::abs(deltax);

@@ -53,7 +53,7 @@ namespace sentry_chassis_controller {
             // 存储四个驱动轮速度和转向轮转向角度
             std::array<double, 4> wheel_speed= {0.0, 0.0, 0.0, 0.0}; 
             std::array<double, 4> steering_angle= {0.0, 0.0, 0.0, 0.0}; 
-            // 定义轮子名字数组,方便传参
+            // 定义轮子名字数组,方便传参、话题的命名
             const std::array<std::string, 4> wheel_names = {
                 "front_left", "front_right", "back_left", "back_right"};
             // PID控制器对象
